@@ -1,0 +1,961 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>VEX Bumper Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Lexend:wght@400;600;800&display=swap">
+<style>
+/* Layout: a robot workbench — editable code on the left, the robot on the right, one line at a time */
+:root{
+  --bg:#edf2f6; --surface:#ffffff; --ink:#15202b; --muted:#566473; --line:#d3dde6;
+  --accent:#d23b2f; --true:#0f8a66; --false:#b86e00; --hl:#ffd84d; --bad:#c62828;
+  --code-bg:#17202b; --code-ink:#dfe7ef; --code-dim:#66778a; --code-now:#2b3a4a; --code-err:#5a1f24;
+  --metal:#a9b4bf; --metal-dark:#6f7b87; --tire:#2a2f35; --screen:#05070a; --wall:#b98a54; --ground:#c4ced8;
+  --sk:#7fc8ff; --ss:#ffc66d; --sf:#9be38a; --sn:#f0a3ff; --sc:#7d8d9c; --sp:#ff9e7a;
+  --f-body:"Lexend",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-code:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f151b; --surface:#17212b; --ink:#e6edf3; --muted:#9aaab9; --line:#2a3744;
+  --accent:#ff6257; --true:#3fd3a2; --false:#f2a93b; --bad:#ff7b72; --code-bg:#0b1117; --code-now:#1f2d3b; --code-err:#4a1a1e;
+  --metal:#8693a0; --metal-dark:#56616c; --tire:#0a0d10; --wall:#8a6a45; --ground:#2a3744; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f151b; --surface:#17212b; --ink:#e6edf3; --muted:#9aaab9; --line:#2a3744;
+  --accent:#ff6257; --true:#3fd3a2; --false:#f2a93b; --bad:#ff7b72; --code-bg:#0b1117; --code-now:#1f2d3b; --code-err:#4a1a1e;
+  --metal:#8693a0; --metal-dark:#56616c; --tire:#0a0d10; --wall:#8a6a45; --ground:#2a3744; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.65;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 64px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:clamp(28px,5vw,44px);font-weight:800}
+h2{font-size:clamp(22px,3.4vw,30px);font-weight:800}
+h3{font-size:18px;font-weight:600}
+p{margin:0}
+code,.mono{font-family:var(--f-code)}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.lead{color:var(--muted);max-width:64ch}
+header{display:flex;flex-direction:column;gap:12px}
+.rule{display:inline-flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.rule span{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:14px}
+.rule b{color:var(--accent)}
+section{display:flex;flex-direction:column;gap:18px}
+.sec-head{display:flex;flex-direction:column;gap:6px}
+
+/* ---------- lab ---------- */
+.lab{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.lab{grid-template-columns:minmax(0,1fr)}}
+.codecol{display:flex;flex-direction:column;gap:10px;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+select{font:inherit;font-size:14px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.editor{background:var(--code-bg);color:var(--code-ink);border-radius:14px;display:flex;font-family:var(--f-code);font-size:15px;line-height:26px;overflow:hidden;min-width:0}
+.gutter{flex:none;padding:12px 0;user-select:none;border-right:1px solid #ffffff12}
+.g{height:26px;display:flex;align-items:center;cursor:pointer;color:var(--code-dim);font-size:12.5px}
+.g .num{width:38px;text-align:right}
+.g .ptr{width:22px;text-align:center;color:var(--hl);font-weight:700;opacity:0}
+.g.now .ptr{opacity:1;animation:nudge .7s ease-in-out infinite alternate}
+.g.now .num{color:var(--hl)}
+.g.err .num{color:#ff9a9a}
+.g:hover .num{color:var(--code-ink)}
+@keyframes nudge{from{transform:translateX(-3px)}to{transform:translateX(2px)}}
+.edwrap{position:relative;flex:1;min-width:0;overflow:hidden}
+.layer{margin:0;padding:12px 14px 28px;white-space:pre;font:inherit;tab-size:4;min-width:max-content}
+.hl-ln{height:26px;padding-right:14px;transition:background .2s,opacity .2s;border-radius:4px;margin:0 -8px;padding-left:8px}
+.hl-ln.now{background:var(--code-now)}
+.hl-ln.skip{opacity:.32}
+.hl-ln.hot{background:#3fd3a226}
+.hl-ln.err{background:var(--code-err)}
+.hl-ln.peek{outline:2px dashed #ffd84d88;outline-offset:-2px}
+textarea#src{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:12px 14px 28px;border:0;resize:none;background:transparent;
+  color:transparent;caret-color:#fff;font:inherit;line-height:26px;white-space:pre;tab-size:4;overflow-x:auto;overflow-y:hidden;outline:none}
+textarea#src::selection{background:#7fc8ff55}
+.editor:focus-within{box-shadow:0 0 0 3px var(--hl)}
+@media (max-width:860px){.editor{font-size:16px}}
+.k{color:var(--sk);font-weight:700}.s{color:var(--ss)}.f{color:var(--sf)}.n{color:var(--sn)}.c{color:var(--sc);font-style:italic}.p{color:var(--sp)}
+
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.robotbox{position:relative;width:100%;aspect-ratio:460/280;max-width:100%}
+.robotbox svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.robotbox .brain-screen{position:absolute;left:26.52%;top:24.64%;width:38.26%;aspect-ratio:2/1;border-radius:2px}
+.robotbox .scr .row{font-size:6.9cqw;font-weight:700}
+#plunger{transition:transform .2s}
+#wall{transition:transform .35s cubic-bezier(.5,1.6,.5,1)}
+.pressed #plunger{transform:translateX(-8px)}
+.pressed #wall{transform:translateX(-34px)}
+#bumperBody{transition:fill .2s}
+.pressed #bumperBody{fill:var(--accent)}
+#askBubble{opacity:0;transition:opacity .25s}
+.asking #askBubble{opacity:1}
+#brainGlow{opacity:0;transition:opacity .4s}
+.warm #brainGlow{opacity:1}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 12px;display:inline-flex;gap:6px;align-items:center;font-variant-numeric:tabular-nums;background:var(--bg)}
+.chip .v{font-family:var(--f-code);font-weight:700}
+.v.t,.t{color:var(--true)}.v.fz,.fz{color:var(--false)}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;font-size:15px;font-weight:600;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;cursor:pointer;line-height:1.3}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--hl);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.bump{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.bump[aria-pressed="true"]{background:var(--surface);color:var(--accent)}
+button.on{background:var(--true);border-color:var(--true);color:#fff}
+.hint{font-size:13px;color:var(--muted)}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.toggle input{width:18px;height:18px;accent-color:var(--accent)}
+
+.narr{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;grid-column:1/-1}
+.narr.error{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad)}
+.narr.error h3{color:var(--bad)}
+.narr-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.badge{font-size:13px;font-weight:600;background:var(--hl);color:#15202b;border-radius:6px;padding:1px 10px}
+.badge.peekb{background:transparent;border:1.5px dashed var(--muted);color:var(--muted)}
+.badge.errb{background:var(--bad);color:#fff}
+.narr-code{font-family:var(--f-code);font-size:14px;background:var(--code-bg);color:var(--code-ink);padding:3px 10px;border-radius:6px;overflow-x:auto;max-width:100%;white-space:pre}
+.narr h3{font-size:22px;font-weight:800}
+.narr .txt{max-width:72ch;font-size:17px}
+.narr .txt code{background:var(--bg);padding:0 5px;border-radius:4px;font-size:15px}
+.dict{display:flex;flex-wrap:wrap;gap:8px}
+.dict span{font-size:13.5px;border-radius:8px;background:var(--bg);padding:2px 10px;border:1px solid var(--line)}
+.dict b{font-family:var(--f-code);margin-right:6px}
+.waitbar{height:10px;border-radius:5px;background:var(--bg);border:1px solid var(--line);overflow:hidden;max-width:360px}
+.waitbar i{display:block;height:100%;width:0;background:var(--true)}
+.waitbar.go i{animation:fill .8s linear forwards}
+@keyframes fill{to{width:100%}}
+.turbo{display:flex;gap:6px 18px;align-items:baseline;flex-wrap:wrap}
+.turbo .big{font-size:40px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+
+.missions{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.missions ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+.missions li{max-width:75ch}
+.missions code{background:var(--bg);padding:0 5px;border-radius:4px;font-size:14px}
+
+/* ---------- word cards ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.card .w{font-family:var(--f-code);font-weight:700;font-size:16px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card .w button{font-size:12px;padding:2px 8px;border-radius:6px;font-family:var(--f-body)}
+.card .zh{font-weight:600}
+.card .eg{color:var(--muted);font-size:14.5px}
+
+/* ---------- screen ---------- */
+.play{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.play{grid-template-columns:minmax(0,1fr)}}
+.v5{background:#1d2228;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.v5 .lbl{color:#aab4bf;font-size:12px;font-family:var(--f-code);display:flex;justify-content:space-between}
+.scr{container-type:inline-size;position:relative;width:100%;aspect-ratio:2/1;background:var(--screen);overflow:hidden;border-radius:3px}
+.scr .row{position:absolute;left:0;color:#fff;font-family:var(--f-code);white-space:pre;font-size:3.47cqw;line-height:1}
+.scr.grid{background-image:linear-gradient(#ffffff14 1px,transparent 1px),linear-gradient(90deg,#ffffff14 1px,transparent 1px);background-size:8.333cqw 8.333cqw}
+.scr .dot{position:absolute;width:2.2cqw;height:2.2cqw;margin:-1.1cqw 0 0 -1.1cqw;border-radius:50%;background:var(--hl);box-shadow:0 0 0 .6cqw #ffd84d55}
+.scr .axis{position:absolute;color:#ffd84d;font:700 2.4cqw var(--f-code)}
+.scr.blank .row{visibility:hidden}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:14px;font-weight:600;display:flex;justify-content:space-between}
+.field label span{font-family:var(--f-code);color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=text]{font:inherit;font-family:var(--f-code);padding:7px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+.preview{font-family:var(--f-code);font-size:14px;background:var(--code-bg);color:var(--code-ink);border-radius:8px;padding:8px 12px;overflow-x:auto;white-space:pre}
+.note{font-size:14px;color:var(--muted);border-left:3px solid var(--hl);padding-left:10px}
+.note code{color:var(--ink)}
+
+.seatrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-family:var(--f-code);font-size:20px;font-weight:700}
+.piece{color:var(--ink)}
+.seat,.varbox{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:64px;padding:2px 10px 6px;border-radius:10px;line-height:1.1}
+.seat{border:2.5px dashed var(--accent);color:var(--accent)}
+.varbox{border:2.5px solid var(--true);color:var(--true)}
+.seat small,.varbox small{font-size:11px;font-weight:400;color:var(--muted)}
+.seat b,.varbox b{font-size:22px;font-variant-numeric:tabular-nums}
+.seat.pop b{animation:pop .35s ease-out}
+@keyframes pop{0%{transform:translateX(70px);opacity:.2}100%{transform:none;opacity:1}}
+.arrow{color:var(--muted);font-size:22px}
+.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px}
+.boolbox{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.box{width:120px;height:84px;border-radius:12px;border:3px solid var(--ink);display:grid;place-items:center;font:700 24px var(--f-code);position:relative;transition:color .2s,border-color .2s}
+.box::before{content:"bumper";position:absolute;top:-12px;left:10px;background:var(--surface);padding:0 6px;font-size:12px;color:var(--muted)}
+.box.t{color:var(--true);border-color:var(--true)}.box.fz{color:var(--false);border-color:var(--false)}
+.eq{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:baseline}
+.eq > code{font-size:22px;font-weight:700;color:var(--accent)}
+
+.quiz{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.q .qt{font-weight:600}
+.q .qt code{background:var(--bg);padding:0 6px;border-radius:4px}
+.opt{text-align:left;font-weight:400;padding:8px 12px}
+.opt.right{border-color:var(--true);background:color-mix(in srgb,var(--true) 12%,var(--surface))}
+.opt.wrong{border-color:var(--false);background:color-mix(in srgb,var(--false) 12%,var(--surface))}
+.fb{font-size:14.5px;min-height:1.5em}
+.score{font-size:18px;font-weight:800}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">VEX V5 · C++ coding lab</div>
+  <h1>Read code like a robot: one line at a time</h1>
+  <p class="lead">Code is not magic. It is a to-do list. The robot follows the list from top to bottom and does one line at a time. Press <b>Next step</b> to see what each line makes the robot do. Then change the code and watch what happens!</p>
+  <div class="rule"><span>Rule 1: read <b>top to bottom</b></span><span>Rule 2: do <b>one line at a time</b></span><span>Rule 3: <b>while</b> means go back up</span></div>
+</header>
+
+<section id="lab">
+  <div class="sec-head">
+    <div class="eyebrow">Lab 1 · You are the programmer</div>
+    <h2>Press the bumper, and the screen says pomp</h2>
+    <p class="lead">The yellow arrow ▶ shows the line the robot is reading right now. The code is yours: click inside it and type. With <b>Run as I type</b> on, the robot restarts with your new code right away. Click a line number to learn what that line means.</p>
+  </div>
+  <div class="lab">
+    <div class="codecol">
+      <div class="toolbar">
+        <label class="hint" for="examples">Example</label>
+        <select id="examples">
+          <option value="bumper">Bumper: pomp / NoNo</option>
+          <option value="counter">Count the presses</option>
+          <option value="blink">Blinking text</option>
+          <option value="speed">Speed meter (%d)</option>
+          <option value="color">Colors</option>
+          <option value="flicker">Flicker problem (fix it!)</option>
+        </select>
+        <button id="resetCode" style="font-size:13px;padding:5px 10px">Undo my changes</button>
+        <label class="toggle"><input type="checkbox" id="live" checked> Run as I type</label>
+      </div>
+      <div class="editor" id="editor">
+        <div class="gutter" id="gutter" aria-label="Line numbers. Click one to learn about that line."></div>
+        <div class="edwrap">
+          <pre class="layer" id="layer" aria-hidden="true"></pre>
+          <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="Code editor"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="robotbox" id="robot">
+        <svg viewBox="0 0 460 280" aria-label="Side view of a VEX robot: the Brain, a bumper sensor, and wheels">
+          <line x1="0" y1="262" x2="460" y2="262" stroke="var(--ground)" stroke-width="4"/>
+          <g id="wall"><rect x="410" y="30" width="44" height="232" rx="3" fill="var(--wall)"/>
+            <line x1="420" y1="50" x2="420" y2="250" stroke="#0002" stroke-width="2"/><line x1="440" y1="40" x2="440" y2="240" stroke="#0002" stroke-width="2"/>
+            <text x="432" y="22" text-anchor="middle" font-size="13" fill="var(--muted)" font-family="Lexend">Wall</text></g>
+          <g fill="var(--tire)"><circle cx="110" cy="226" r="34"/><circle cx="290" cy="226" r="34"/></g>
+          <g fill="var(--metal)"><circle cx="110" cy="226" r="12"/><circle cx="290" cy="226" r="12"/></g>
+          <rect x="60" y="176" width="284" height="26" rx="3" fill="var(--metal)"/>
+          <g fill="var(--metal-dark)">
+            <rect x="72" y="185" width="8" height="8" rx="1"/><rect x="96" y="185" width="8" height="8" rx="1"/><rect x="120" y="185" width="8" height="8" rx="1"/><rect x="144" y="185" width="8" height="8" rx="1"/><rect x="168" y="185" width="8" height="8" rx="1"/><rect x="192" y="185" width="8" height="8" rx="1"/><rect x="216" y="185" width="8" height="8" rx="1"/><rect x="240" y="185" width="8" height="8" rx="1"/><rect x="264" y="185" width="8" height="8" rx="1"/><rect x="288" y="185" width="8" height="8" rx="1"/><rect x="312" y="185" width="8" height="8" rx="1"/></g>
+          <rect x="140" y="160" width="10" height="18" fill="var(--metal-dark)"/><rect x="270" y="160" width="10" height="18" fill="var(--metal-dark)"/>
+          <rect id="brainGlow" x="112" y="56" width="196" height="114" rx="12" fill="none" stroke="var(--true)" stroke-width="6"/>
+          <rect x="116" y="60" width="188" height="106" rx="9" fill="#1d2228"/>
+          <rect x="122" y="66" width="176" height="94" rx="3" fill="#000"/>
+          <text x="210" y="50" text-anchor="middle" font-size="13" fill="var(--muted)" font-family="JetBrains Mono">Brain</text>
+          <rect x="300" y="128" width="14" height="18" rx="2" fill="#1d2228"/>
+          <text x="322" y="124" font-size="12" fill="var(--muted)" font-family="JetBrains Mono" font-weight="700">H</text>
+          <path d="M314 138 C 350 138, 330 172, 352 172" fill="none" stroke="var(--accent)" stroke-width="3"/>
+          <rect id="bumperBody" x="344" y="166" width="30" height="42" rx="4" fill="var(--metal-dark)"/>
+          <rect id="plunger" x="374" y="176" width="14" height="22" rx="3" fill="var(--accent)"/>
+          <text x="372" y="252" text-anchor="end" font-size="11" fill="var(--muted)" font-family="JetBrains Mono" font-weight="700">BumperH</text>
+          <g id="askBubble">
+            <rect x="238" y="4" width="180" height="34" rx="10" fill="var(--hl)"/>
+            <path d="M350 38 L360 54 L366 38 Z" fill="var(--hl)"/>
+            <text id="askText" x="328" y="27" text-anchor="middle" font-size="14" font-weight="600" fill="#15202b" font-family="Lexend">Pressed?</text>
+          </g>
+        </svg>
+        <div class="brain-screen scr" id="simScreen" aria-label="Brain screen"></div>
+      </div>
+      <div class="chips">
+        <span class="chip">Bumper right now: <span class="v fz" id="liveVal">false</span></span>
+        <span class="chip">while loop: round <span class="v" id="loopVal">0</span></span>
+      </div>
+      <div class="controls">
+        <button class="bump" id="bumpBtn" aria-pressed="false">Press the bumper</button>
+        <span class="hint">or hold the space bar (when you are not typing)</span>
+      </div>
+    </div>
+
+    <div class="narr" id="narr" aria-live="polite">
+      <div class="narr-top"><span class="badge" id="nBadge">Not started</span><span class="narr-code" id="nCode"></span></div>
+      <h3 id="nTitle">Ready?</h3>
+      <p class="txt" id="nText">When the robot turns on, it starts reading at the very top. Each time you press <b>Next step</b>, it does one line.</p>
+      <div class="waitbar" id="waitbar" hidden><i></i></div>
+      <div class="dict" id="nDict"></div>
+      <div class="turbo" id="turbo" hidden>
+        <span class="big"><span id="turboN">0</span> rounds</span>
+        <span class="hint">At real speed, the bumper example runs about 50 rounds every second. That is why the screen seems to change instantly. Try pressing the bumper!</span>
+      </div>
+      <div class="controls">
+        <button id="backBtn">◀ Back</button>
+        <button class="primary" id="nextBtn">Next step ▶</button>
+        <button id="playBtn">Auto play</button>
+        <select id="speed" aria-label="Auto play speed"><option value="1600">Slow</option><option value="900" selected>Medium</option><option value="350">Fast</option></select>
+        <button id="turboBtn">Real speed</button>
+        <button id="resetBtn">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="missions">
+    <h3>Missions: change the code and watch the robot</h3>
+    <ol>
+      <li>Change <code>"pomp     "</code> to your own name. Then press the bumper.</li>
+      <li>Move the words down the screen. Change both <code>20</code>s in <code>printAt(1, 20, …)</code> to <code>100</code>.</li>
+      <li>Add color. Type <code>Brain.Screen.setPenColor(green);</code> on a new line right above the line that prints pomp.</li>
+      <li>Change <code>wait(20, msec);</code> to <code>wait(2000, msec);</code> and use <b>Real speed</b>. Press the bumper. Why is the robot slow to answer now?</li>
+      <li>Break it on purpose! Delete one <code>;</code> and read what the robot tells you. Mistakes are normal. Every programmer fixes them all day.</li>
+      <li>Pick the <b>Speed meter (%d)</b> example. Hold the bumper and watch the number grow. Then let go. Do you see <code>Speed = 05</code> or <code>Speed = 00</code>? Fix it by adding spaces after <code>%d</code>: <code>"Speed = %d   "</code>.</li>
+      <li>In the speed meter, change <code>speed + 5</code> to <code>speed + 1</code>. Then change <code>100</code> to <code>50</code>. What changes?</li>
+      <li>Try the <b>Flicker problem</b> example. Can you stop the flicker? (Hint: who keeps wiping the screen?)</li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">Word cards</div>
+    <h2>Code words are short and simple</h2>
+    <p class="lead">Most code words are normal English words with one job each. Press <b>Say it</b> to hear the word.</p>
+  </div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">Lab 2 · Writing on the screen</div>
+    <h2>printAt(x, y, "text") tells the robot where to write</h2>
+    <p class="lead">The V5 Brain screen is 480 dots wide and 240 dots tall. <b>x</b> is how far across (→). <b>y</b> is how far down (↓). The top-left corner is (0, 0). Move the sliders. The yellow dot is where your text will start.</p>
+  </div>
+  <div class="play">
+    <div class="v5">
+      <div class="lbl"><span>(0, 0)</span><span>480 wide →</span></div>
+      <div class="scr grid" id="pgScreen" aria-label="Practice screen"></div>
+      <div class="lbl"><span>↓ 240 tall</span><span>(480, 240)</span></div>
+    </div>
+    <div class="panel">
+      <div class="field"><label for="px">x (across) <span id="pxv">1</span></label><input type="range" id="px" min="1" max="400" value="1"></div>
+      <div class="field"><label for="py">y (down) <span id="pyv">60</span></label><input type="range" id="py" min="20" max="230" value="60"></div>
+      <div class="field"><label for="ptxt">Text to write</label><input type="text" id="ptxt" value="Hi" maxlength="24"></div>
+      <div class="preview" id="pgCode"></div>
+      <div class="controls">
+        <button class="primary" id="pgPrint">Run printAt</button>
+        <button id="pgLine">clearLine()</button>
+        <button id="pgClear">clearScreen()</button>
+      </div>
+      <p class="note">Secret: if new text is shorter than old text, the end of the old text stays. Write <code>Hi</code> at (1, 20) and you get <code>Himp</code>! That is why the example writes <code>"pomp     "</code> with spaces at the end. Spaces work like an eraser.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">Lab 3 · Showing numbers with %d</div>
+    <h2>%d is a seat saved for a number</h2>
+    <p class="lead">Text in quotes never changes by itself. To show a number that changes, like <code>speed</code>, put <b>%d</b> in the text. Then put the number after a comma. The robot puts the number in the %d seat. (d stands for <b>d</b>igits, a whole number.)</p>
+  </div>
+  <div class="play">
+    <div class="panel">
+      <div class="preview" id="dCode"></div>
+      <div class="seatrow" aria-label="How the text is built">
+        <span class="piece">"Speed = </span><span class="seat" id="dSeat"><small>%d</small><b id="dSeatV">0</b></span><span class="piece" id="dTail">"</span>
+        <span class="arrow">←</span>
+        <span class="varbox"><small>int speed</small><b id="dVar">0</b></span>
+      </div>
+      <div class="v5" style="max-width:420px"><div class="scr" id="dScreen" aria-label="Screen showing the speed"></div></div>
+      <p class="hint" id="dShows"></p>
+    </div>
+    <div class="panel">
+      <div class="field"><label for="dSpeed">speed <span id="dSpeedV">0</span></label><input type="range" id="dSpeed" min="0" max="120" value="0"></div>
+      <div class="controls">
+        <button id="dMinus">speed = speed - 1;</button>
+        <button id="dPlus">speed = speed + 1;</button>
+        <button id="dTen">speed = 10;</button>
+        <button id="dNine">speed = 9;</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="dSpaces"> Add spaces after %d: <code>"Speed = %d   "</code></label>
+      <p class="note"><b>Try this:</b> press <code>speed = 10;</code>, then <code>speed = 9;</code>. The screen says <code>Speed = 90</code>! The 0 from 10 was never erased. Now tick the box and try again. The spaces erase the old digits.</p>
+      <p class="note">You can use more than one seat: <code>printAt(1, 60, "x=%d y=%d", x, y)</code>. The first number goes in the first seat, the second number in the second seat.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">Lab 4 · The true/false box</div>
+    <h2>bool: a box for true or false</h2>
+  </div>
+  <div class="duo">
+    <div class="panel">
+      <div class="preview">bool bumper = BumperH.pressing();</div>
+      <div class="boolbox">
+        <div class="box fz" id="boolBox">false</div>
+        <button class="bump" id="bump2" aria-pressed="false">Press the bumper</button>
+      </div>
+      <p>A bool box is picky. It only holds two things: <b class="t">true</b> (yes) or <b class="fz">false</b> (no). This line asks the bumper “Are you pressed?” and puts the answer in a box named <code>bumper</code>.</p>
+    </div>
+    <div class="panel">
+      <h3>One equals sign or two? Big difference!</h3>
+      <div class="eq">
+        <code>=</code><p><b>Put it in.</b> <code>x = 5</code> means “put 5 into the box x”. Like dropping candy into a jar.</p>
+        <code>==</code><p><b>Ask: are they the same?</b> <code>x == 5</code> means “Is x equal to 5?” The answer is true or false.</p>
+      </div>
+      <p class="note">Remember: one = <b>does</b> something. Two == <b>asks</b> something. Inside the ( ) of an if, you ask, so you use ==.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">Quiz</div>
+    <h2>Test yourself</h2>
+    <p class="score" id="score">0 of 5 correct</p>
+  </div>
+  <div class="quiz" id="quiz"></div>
+</section>
+</div>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ================= Examples ================= */
+const HEAD='#include "vex.h"\nusing namespace vex;\n\nint main() {\n    vexcodeInit();\n';
+const EX={
+bumper:HEAD+`
+    while (true) {
+        if (BumperH.pressing()) {
+            Brain.Screen.printAt(1, 20, "pomp     ");
+        }
+        else {
+            Brain.Screen.printAt(1, 20, "NoNo     ");
+        }
+
+        wait(20, msec);
+    }
+}`,
+counter:HEAD+`    int count = 0;
+    bool wasPressed = false;
+
+    while (true) {
+        bool now = BumperH.pressing();
+        if (now && !wasPressed) {
+            count = count + 1;
+        }
+        wasPressed = now;
+        Brain.Screen.printAt(1, 20, "Presses: %d   ", count);
+        wait(20, msec);
+    }
+}`,
+speed:HEAD+`    int speed = 0;
+
+    while (true) {
+        if (BumperH.pressing()) {
+            speed = speed + 5;
+        }
+        else {
+            speed = 0;
+        }
+        if (speed > 100) {
+            speed = 100;
+        }
+        Brain.Screen.printAt(1, 20, "Hold the bumper!");
+        Brain.Screen.printAt(1, 40, "Speed = %d", speed);
+        wait(100, msec);
+    }
+}`,
+blink:HEAD+`
+    while (true) {
+        Brain.Screen.printAt(1, 20, "Hello!");
+        wait(500, msec);
+        Brain.Screen.clearScreen();
+        wait(500, msec);
+    }
+}`,
+color:HEAD+`
+    while (true) {
+        if (BumperH.pressing()) {
+            Brain.Screen.setPenColor(green);
+            Brain.Screen.printAt(1, 20, "GO!  ");
+        }
+        else {
+            Brain.Screen.setPenColor(red);
+            Brain.Screen.printAt(1, 20, "STOP ");
+        }
+        wait(20, msec);
+    }
+}`,
+flicker:HEAD+`
+    while (true) {
+        Brain.Screen.clearScreen();
+        if (BumperH.pressing()) {
+            Brain.Screen.printAt(1, 20, "pomp");
+        }
+        else {
+            Brain.Screen.printAt(1, 20, "NoNo");
+        }
+        wait(20, msec);
+    }
+}`};
+
+/* ================= Highlighter ================= */
+function hl(s){
+  return esc(s).replace(/(&quot;|"[^"]*"?)|(\/\/.*)|(#include)|\b(int|while|true|false|if|else|using|namespace|bool|return|float|double)\b|\b(msec|seconds|sec|red|green|blue|yellow|orange|purple|white|cyan)\b|\b(\d+)\b|([A-Za-z_]\w*)(?=\()/g,
+   (m,str,com,pre,kw,cst,num,fn)=>str?`<span class="s">${str}</span>`:com?`<span class="c">${com}</span>`:pre?`<span class="p">${pre}</span>`:kw?`<span class="k">${kw}</span>`:cst?`<span class="n">${cst}</span>`:num?`<span class="n">${num}</span>`:`<span class="f">${fn}</span>`);
+}
+
+/* ================= Screen (48 cols × 10px, rows keyed by y) ================= */
+const COLORS={white:'#ffffff',red:'#ff5252',green:'#3ddc84',blue:'#5aa9ff',yellow:'#ffd84d',orange:'#ff9f43',purple:'#c39bff',cyan:'#4dd9e8'};
+function Screen(el,flash){
+  const rows=new Map();let lastY=null,ft=null;const S={pen:'white'};
+  function render(){
+    el.querySelectorAll('.row').forEach(n=>n.remove());
+    for(const [y,arr] of rows){const d=document.createElement('div');d.className='row';d.style.top=((y-16)/480*100)+'cqw';
+      let html='',cur=null,buf='';
+      for(const c of arr){if(c.k!==cur){if(buf)html+=`<span style="color:${COLORS[cur]}">${esc(buf)}</span>`;buf='';cur=c.k}buf+=c.c}
+      if(buf)html+=`<span style="color:${COLORS[cur]}">${esc(buf)}</span>`;
+      d.innerHTML=html;el.appendChild(d);}
+  }
+  const blank=()=>Array.from({length:48},()=>({c:' ',k:'white'}));
+  S.print=(x,y,t)=>{const col=Math.max(0,Math.floor(x/10));const arr=rows.get(y)||blank();
+    for(let i=0;i<t.length&&col+i<48;i++)arr[col+i]={c:t[i]==='\n'?' ':t[i],k:S.pen};rows.set(y,arr);lastY=y;render();};
+  S.clear=()=>{const had=rows.size>0;rows.clear();render();
+    if(flash&&had){el.classList.add('blank');clearTimeout(ft);ft=setTimeout(()=>el.classList.remove('blank'),30);}};
+  S.clearLine=r=>{if(r!=null){for(const y of [...rows.keys()])if(y>(r-1)*20&&y<=r*20)rows.delete(y);}else if(lastY!=null)rows.delete(lastY);render();};
+  S.reset=()=>{rows.clear();S.pen='white';lastY=null;render();};
+  return S;
+}
+
+/* ================= Lexer ================= */
+function lex(src){
+  const T=[];let i=0,line=1;const n=src.length;const err=(l,m)=>{throw{line:l,msg:m}};
+  while(i<n){const c=src[i];
+    if(c==='\n'){line++;i++;continue}
+    if(/\s/.test(c)){i++;continue}
+    if(c==='/'&&src[i+1]==='/'){while(i<n&&src[i]!=='\n')i++;continue}
+    if(c==='/'&&src[i+1]==='*'){const l0=line;i+=2;while(i<n&&!(src[i]==='*'&&src[i+1]==='/')){if(src[i]==='\n')line++;i++}if(i>=n)err(l0,'This comment /* never ends. Add */ to close it.');i+=2;continue}
+    if(c==='#'){const s=i;while(i<n&&src[i]!=='\n')i++;T.push({t:'pre',v:src.slice(s,i).trim(),line,s,e:i});continue}
+    if(c==='"'){const s=i;i++;let v='';while(i<n&&src[i]!=='"'&&src[i]!=='\n'){if(src[i]==='\\'&&i+1<n){const d=src[i+1];v+=d==='n'?'\n':d;i+=2;continue}v+=src[i++]}
+      if(src[i]!=='"')err(line,'This text needs a closing quote ". Text always goes between two quotes, like "Hi".');i++;T.push({t:'str',v,line,s,e:i});continue}
+    if(/[0-9]/.test(c)){const s=i;while(i<n&&/[0-9.]/.test(src[i]))i++;T.push({t:'num',v:parseFloat(src.slice(s,i)),line,s,e:i});continue}
+    if(/[A-Za-z_]/.test(c)){const s=i;while(i<n&&/\w/.test(src[i]))i++;T.push({t:'id',v:src.slice(s,i),line,s,e:i});continue}
+    const two=src.substr(i,2);
+    if(['==','!=','<=','>=','&&','||','++','--','+=','-='].includes(two)){T.push({t:'op',v:two,line,s:i,e:i+2});i+=2;continue}
+    if('(){};,.!<>=+-*/%'.includes(c)){T.push({t:'op',v:c,line,s:i,e:i+1});i++;continue}
+    err(line,`I don't know this symbol: ${c}`);
+  }
+  T.push({t:'eof',v:'',line,s:n,e:n});return T;
+}
+
+/* ================= Parser ================= */
+const KNOWN=['vexcodeInit','wait','Brain.Screen.printAt','Brain.Screen.clearScreen','Brain.Screen.clearLine','Brain.Screen.setPenColor','BumperH.pressing','while','if','else','bool','int','true','false','return'];
+function lev(a,b){a=a.toLowerCase();b=b.toLowerCase();const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length];}
+function sug(name){let best=null,bd=9;for(const k of KNOWN){const d=lev(name,k);if(d<bd){bd=d;best=k}}return bd<=Math.max(2,Math.floor(best.length/4))?` Did you mean <code>${best}</code>?`:' Check the spelling. Big and small letters matter!';}
+
+function parse(src){
+  const T=lex(src);let p=0;
+  const pk=(o=0)=>T[Math.min(p+o,T.length-1)],nx=()=>T[p++];
+  const is=(v,o=0)=>{const t=pk(o);return t.t!=='str'&&t.t!=='eof'&&t.v===v};
+  const err=(l,m)=>{throw{line:l,msg:m}};
+  const prevLine=()=>T[Math.max(0,p-1)].line;
+  function expect(v,msg){if(is(v))return nx();
+    if(v===';')err(prevLine(),'Missing <code>;</code> at the end of this line. Every command ends with a semicolon ;');
+    err(pk().t==='eof'?prevLine():pk().line,msg||`I expected <code>${esc(v)}</code> here.`);}
+  var mulE=bin(un,['*','/','%']),addE=bin(mulE,['+','-']),relE=bin(addE,['<','>','<=','>=']),eqE=bin(relE,['==','!=']),andE=bin(eqE,['&&']),orE=bin(andE,['||']);
+  const top=[];let main=null;
+  while(pk().t!=='eof'){const t=pk();
+    if(t.t==='pre'){nx();if(!/^#include\s*[<"].+[>"]$/.test(t.v))err(t.line,'This #include line looks wrong. Try: <code>#include "vex.h"</code>');top.push({k:'include',line:t.line});continue}
+    if(is('using')){nx();expect('namespace','Try: <code>using namespace vex;</code>');const id=nx();if(id.v!=='vex')err(id.line,'Try: <code>using namespace vex;</code>');expect(';');top.push({k:'using',line:t.line});continue}
+    if(is('int')&&is('main',1)){nx();nx();expect('(','main needs ( ) like this: <code>int main() {</code>');expect(')','main needs ( ) like this: <code>int main() {</code>');const b=block();main={k:'main',line:t.line,body:b.body,end:b.end};continue}
+    err(t.line,`I didn't expect <code>${esc(t.v)}</code> here. Your commands should go inside <code>int main() { }</code>.`);
+  }
+  if(!main)err(1,"I can't find <code>int main() { }</code>. Every program needs one!");
+  return{top,main,src};
+
+  function block(){const o=expect('{','I expected a <code>{</code> to start this part.');const body=[];
+    while(!is('}')){if(pk().t==='eof')err(o.line,`The <code>{</code> on line ${o.line} is never closed. Add a <code>}</code> to close it.`);body.push(stmt())}
+    const c=nx();return{body,end:c.line}}
+  function condParen(kw){expect('(',`${kw} needs ( ) around the question, like <code>${kw} (true)</code>`);const s=pk();if(is(')'))err(s.line,`The ( ) after ${kw} is empty. Put a question inside!`);
+    const e=expr();const last=T[p-1];expect(')','I expected a <code>)</code> to close the question.');return{e,text:src.slice(s.s,last.e)}}
+  function lastLine(s){return s.k==='if'?(s.els?s.elsEnd:s.thenEnd):s.k==='while'?s.end:s.line}
+  function stmt(){
+    const t=pk();
+    if(t.t==='op'&&t.v===';'){nx();return{k:'empty',line:t.line}}
+    if(t.t!=='id')err(t.line,`I didn't expect <code>${esc(t.t==='str'?'"'+t.v+'"':t.v)}</code> here.`);
+    if(t.v==='while'){nx();const c=condParen('while');const b=block();return{k:'while',line:t.line,cond:c.e,text:c.text,body:b.body,end:b.end}}
+    if(t.v==='if'){nx();const c=condParen('if');const b=block();const s={k:'if',line:t.line,cond:c.e,text:c.text,then:b.body,thenEnd:b.end,els:null};
+      if(is('else')){const el=nx();s.elseLine=el.line;if(is('if')){const sub=stmt();s.els=[sub];s.elsEnd=lastLine(sub);s.elseIf=true}else{const b2=block();s.els=b2.body;s.elsEnd=b2.end}}
+      return s}
+    if(t.v==='else')err(t.line,'This <code>else</code> has no <code>if</code> before it. else must come right after the <code>}</code> of an if.');
+    if(['bool','int','float','double'].includes(t.v)){nx();const id=nx();if(id.t!=='id')err(id.line,`Give your ${t.v} box a name, like: <code>${t.v} myBox = ...;</code>`);
+      let e=null;if(is('=')){nx();e=expr()}expect(';');return{k:'decl',line:t.line,type:t.v,name:id.v,e}}
+    if(t.v==='return'){nx();if(!is(';'))expr();expect(';');return{k:'return',line:t.line}}
+    nx();let name=t.v;while(is('.')){nx();const id=nx();if(id.t!=='id')err(id.line,'After a dot <code>.</code> you need a name.');name+='.'+id.v}
+    if(is('(')){nx();const args=[];if(!is(')')){args.push(expr());while(is(',')){nx();args.push(expr())}}
+      expect(')','I expected a <code>)</code> to close this command.');expect(';');return checkCall({k:'call',line:t.line,name,args})}
+    if(name.includes('.'))err(t.line,`Did you forget the <code>( )</code> after <code>${esc(name)}</code>?`);
+    if(is('=')||is('+=')||is('-=')){const op=nx().v;const e=expr();expect(';');return{k:'assign',line:t.line,name,op,e}}
+    if(is('++')||is('--')){const op=nx().v;expect(';');return{k:'assign',line:t.line,name,op:op==='++'?'+=':'-=',e:{k:'num',v:1}}}
+    err(t.line,`I don't know what <code>${esc(name)}</code> means here.${sug(name)}`);
+  }
+  function checkCall(s){const n=s.args.length,L=s.line;
+    switch(s.name){
+    case 'vexcodeInit':if(n)err(L,'vexcodeInit() does not need anything inside the ( ).');return s;
+    case 'wait':{if(n!==2)err(L,'wait needs a number and a unit, like <code>wait(20, msec);</code>');const u=s.args[1];
+      if(u.k!=='var'||!['msec','seconds','sec'].includes(u.name))err(L,'The second part of wait is the unit: <code>msec</code> or <code>seconds</code>.');s.unit=u.name==='msec'?'msec':'seconds';return s}
+    case 'Brain.Screen.printAt':if(n<3)err(L,'printAt needs three things: x, y and the text. Like <code>printAt(1, 20, "Hi")</code>');return s;
+    case 'Brain.Screen.clearScreen':if(n)err(L,'clearScreen() does not need anything inside the ( ).');return s;
+    case 'Brain.Screen.clearLine':if(n>1)err(L,'clearLine takes one row number, or nothing.');return s;
+    case 'Brain.Screen.setPenColor':{const a=s.args[0];if(n!==1||a.k!=='var'||!COLORS[a.name])err(L,'Pick a color: <code>white, red, green, blue, yellow, orange, purple, cyan</code>. Like <code>setPenColor(green);</code>');s.color=a.name;return s}
+    case 'BumperH.pressing':err(L,'pressing() asks a question. Use it inside <code>if ( )</code>, or save the answer: <code>bool b = BumperH.pressing();</code>');
+    }
+    err(L,`I don't know the command <code>${esc(s.name)}</code>.${sug(s.name)}`);
+  }
+  function expr(){return orE()}
+  function bin(next,ops){return()=>{let a=next();while(ops.some(o=>is(o))){const line=pk().line;const op=nx().v;a={k:'bin',op,a,b:next(),line}}return a}}
+  function un(){if(is('!')){nx();return{k:'not',a:un()}}if(is('-')){nx();return{k:'neg',a:un()}}return prim()}
+  function prim(){const t=nx();
+    if(t.t==='num')return{k:'num',v:t.v};
+    if(t.t==='str')return{k:'str',v:t.v};
+    if(t.t==='op'&&t.v==='('){const e=expr();expect(')','I expected a <code>)</code> here.');return e}
+    if(t.t==='id'){if(t.v==='true'||t.v==='false')return{k:'bool',v:t.v==='true'};
+      let name=t.v;while(is('.')){nx();const id=nx();if(id.t!=='id')err(id.line,'After a dot <code>.</code> you need a name.');name+='.'+id.v}
+      if(is('(')){nx();if(name!=='BumperH.pressing')err(t.line,`I don't know <code>${esc(name)}()</code>.${sug(name)}`);expect(')','pressing needs empty ( ) like this: <code>BumperH.pressing()</code>');return{k:'sense',line:t.line}}
+      if(name==='BumperH.pressing')err(t.line,'Add <code>( )</code> after pressing: <code>BumperH.pressing()</code>');
+      if(name.includes('.'))err(t.line,`I don't know <code>${esc(name)}</code>.${sug(name)}`);
+      return{k:'var',name,line:t.line}}
+    if(t.t==='eof')err(prevLine(),'The program ended too early. Is something missing?');
+    if(t.t==='op'&&t.v===';')err(t.line,'Something is missing before this <code>;</code>');
+    err(t.line,`I didn't expect <code>${esc(t.v)}</code> here.`);
+  }
+}
+
+/* ================= Runner ================= */
+class Ret{}
+const conv=(type,v)=>type==='bool'?!!v:type==='int'?Math.trunc(Number(v)):Number(v);
+function format(f,args){return f.replace(/%(\.\d+)?([dfis%])/g,(m,pr,c)=>{if(c==='%')return'%';if(!args.length)return m;const a=args.shift();
+  if(c==='d'||c==='i')return String(Math.trunc(Number(a)));if(c==='f')return Number(a).toFixed(pr?+pr.slice(1):6);return String(a)})}
+function makeRun(prog,ctx){
+  const vars=new Map();
+  const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+  function ev(e){switch(e.k){
+    case 'num':case 'str':case 'bool':return e.v;
+    case 'sense':{const v=ctx.read();ctx.sensed=v;return v}
+    case 'var':if(e.name==='msec'||e.name==='seconds'||COLORS[e.name])throw{line:e.line,msg:`<code>${e.name}</code> can only be used inside wait( ) or setPenColor( ).`};
+      if(!vars.has(e.name))throw{line:e.line,msg:`What is <code>${esc(e.name)}</code>? Make the box first, like: <code>int ${esc(e.name)} = 0;</code>${sug(e.name).startsWith(' Did')?sug(e.name):''}`};return vars.get(e.name).v;
+    case 'not':return !ev(e.a);
+    case 'neg':return -ev(e.a);
+    case 'bin':{if(e.op==='&&')return !!(ev(e.a)&&ev(e.b));if(e.op==='||')return !!(ev(e.a)||ev(e.b));const a=ev(e.a),b=ev(e.b);
+      switch(e.op){case '==':return a==b;case '!=':return a!=b;case '<':return a<b;case '>':return a>b;case '<=':return a<=b;case '>=':return a>=b;
+        case '+':return a+b;case '-':return a-b;case '*':return a*b;
+        case '/':if(b==0)throw{line:e.line,msg:"You can't divide by 0!"};return Number.isInteger(a)&&Number.isInteger(b)?Math.trunc(a/b):a/b;
+        case '%':return a%b}}
+  }}
+  function doCall(s){switch(s.name){
+    case 'vexcodeInit':return{fn:'init'};
+    case 'wait':{const n=ev(s.args[0]);if(typeof n!=='number'||n<0)throw{line:s.line,msg:'wait needs a number that is 0 or more.'};return{fn:'wait',n,ms:s.unit==='msec'?n:n*1000,unit:s.unit}}
+    case 'Brain.Screen.printAt':{const x=ev(s.args[0]),y=ev(s.args[1]),f=ev(s.args[2]);
+      if(typeof x!=='number'||typeof y!=='number')throw{line:s.line,msg:'x and y must be numbers, like <code>printAt(1, 20, "Hi")</code>'};
+      if(typeof f!=='string')throw{line:s.line,msg:'The third part of printAt must be text in quotes, like <code>"Hi"</code>. To show a number, write <code>"%d"</code> and then the number: <code>printAt(1, 20, "%d", count)</code>'};
+      const vals=s.args.slice(3).map(ev);const txt=format(f,vals.slice());ctx.screen.print(x,y,txt);
+      const names=s.args.slice(3).map(a=>a.k==='var'?a.name:null);return{fn:'printAt',x,y,txt,fmt:f,vals,names}}
+    case 'Brain.Screen.clearScreen':ctx.screen.clear();return{fn:'clearScreen'};
+    case 'Brain.Screen.clearLine':{const r=s.args.length?ev(s.args[0]):null;ctx.screen.clearLine(r);return{fn:'clearLine',r}}
+    case 'Brain.Screen.setPenColor':ctx.screen.pen=s.color;return{fn:'pen',color:s.color};
+  }}
+  function* blk(b){for(const s of b)yield* st(s)}
+  function* st(s){
+    ctx.sensed=undefined;
+    switch(s.k){
+    case 'empty':return;
+    case 'decl':{let v=s.e?ev(s.e):(s.type==='bool'?false:0);v=conv(s.type,v);vars.set(s.name,{type:s.type,v});yield{kind:'decl',line:s.line,s,v,sensed:ctx.sensed};return}
+    case 'assign':{if(!vars.has(s.name))throw{line:s.line,msg:`What is <code>${esc(s.name)}</code>? Make the box first, like: <code>int ${esc(s.name)} = 0;</code>`};
+      const box=vars.get(s.name);let v=ev(s.e);if(s.op==='+=')v=box.v+v;if(s.op==='-=')v=box.v-v;box.v=conv(box.type,v);yield{kind:'assign',line:s.line,s,v:box.v,sensed:ctx.sensed};return}
+    case 'return':yield{kind:'return',line:s.line,s};throw new Ret();
+    case 'while':{let n=0;while(true){ctx.sensed=undefined;const c=!!ev(s.cond);n++;yield{kind:'while',line:s.line,s,v:c,n,sensed:ctx.sensed};if(!c)break;yield* blk(s.body);yield{kind:'loopEnd',line:s.end,s}}return}
+    case 'if':{const c=!!ev(s.cond);const skip=c?(s.els?range(s.elseLine,s.elsEnd):[]):range(s.line+1,s.thenEnd);
+      yield{kind:'if',line:s.line,s,v:c,skip,sensed:ctx.sensed};
+      if(c)yield* blk(s.then);else if(s.els){if(s.elseIf)yield* st(s.els[0]);else{yield{kind:'else',line:s.elseLine,s};yield* blk(s.els)}}return}
+    case 'call':{const r=doCall(s);yield Object.assign({kind:'call',line:s.line,s,sensed:ctx.sensed},r);return}
+    }
+  }
+  return function*(){
+    for(const s of prog.top)yield{kind:s.k,line:s.line,s};
+    yield{kind:'main',line:prog.main.line,s:prog.main};
+    try{yield* blk(prog.main.body)}catch(x){if(!(x instanceof Ret))throw x}
+    yield{kind:'end',line:prog.main.end};
+  };
+}
+
+/* ================= Explanations ================= */
+const D={
+  include:[['include','bring in']],using:[['using','use'],['namespace','a family of names']],main:[['int','whole number'],['main','the main one']],
+  init:[['init','get ready']],while:[['while','as long as'],['true','yes, correct']],if:[['if','only if'],['pressing','being pressed now']],
+  else:[['else','otherwise']],printAt:[['print','write'],['at','in this spot'],['x','across →'],['y','down ↓']],clear:[['clear','erase'],['screen','the display']],
+  wait:[['wait','pause'],['msec','millisecond, 1/1000 of a second']],box:[['bool','true/false box'],['int','whole-number box']],pen:[['pen color','the color of the text']]};
+const boxDesc=t=>t==='bool'?'true/false box (<b>bool</b>)':t==='int'?'whole-number box (<b>int</b>)':'number box';
+const fv=v=>typeof v==='boolean'?`<b class="${v?'t':'fz'}">${v}</b>`:`<b>${esc(v)}</b>`;
+const sensedTxt=e=>e.sensed===undefined?'':`It asks the bumper: “Are you pressed right now?” The bumper says ${fv(e.sensed)}. `;
+const lit=a=>a&&(a.k==='num'||a.k==='str')?a.v:'…';
+function explain(e,peek){
+  const s=e.s,R=(t,x,d)=>({t,x,d});
+  switch(e.kind){
+  case 'include':return R('Open the VEX toolbox','<b>include</b> means “bring in”. This line brings in the VEX toolbox, full of commands for motors, sensors and the screen. It is like opening your pencil case before class.',D.include);
+  case 'using':return R('Speak VEX','A <b>namespace</b> is a family of names. This line says: “All the commands below come from the VEX family.” Now we don’t have to say their full names every time.',D.using);
+  case 'main':return R('The program starts here!','<b>main</b> means “the main one”. When the robot turns on, it looks for main first. Then it starts at the <code>{</code> and goes down.',D.main);
+  case 'while':{const always=s.text.trim()==='true';
+    if(peek)return R('Repeat!',always?'<b>while</b> means “as long as”. <b>true</b> is always true, so everything inside the { } repeats forever.':`<b>while</b> means “as long as”. The robot repeats the { } part as long as <code>${esc(s.text)}</code> is true.`,D.while);
+    if(always)return R(`Repeat forever! Round ${e.n}`,`<b>while</b> means “as long as”. <b>true</b> is always true, so the robot goes inside the { } again and again. ${e.n===1?'This is the first round.':`This is round ${e.n}.`}`,D.while);
+    return R(e.v?`Check, then repeat. Round ${e.n}`:'The loop is over',`The robot checks <code>${esc(s.text)}</code>. ${sensedTxt(e)}The answer is ${fv(e.v)}, so ${e.v?'it goes inside the { } again.':`it leaves the loop and goes past line ${s.end}.`}`,D.while)}
+  case 'if':
+    if(peek)return R('Ask a question',`<b>if</b> means “only if”. The robot asks: <code>${esc(s.text)}</code>. If the answer is true, it runs the first { }. ${s.els?'If it is false, it runs the else part.':'If it is false, it skips the { }.'}`,D.if);
+    return R('Ask a question',`<b>if</b> means “only if”. The robot asks: <code>${esc(s.text)}</code>. ${sensedTxt(e)}The answer is ${fv(e.v)}. ${e.v?(s.els?'So it runs the if part and skips the else part.':'So it runs the { } part.'):(s.els?'So it skips the if part and goes to else.':'So it skips the { } part.')}`,D.if);
+  case 'else':return R('Otherwise…','<b>else</b> means “otherwise”. The answer was false, so the robot takes this path instead.',D.else);
+  case 'decl':return R('Make a box',`This makes a new ${boxDesc(s.type)} named <b>${esc(s.name)}</b>.${peek?'':` ${sensedTxt(e)}Now <b>${esc(s.name)}</b> = ${fv(e.v)}.`}`,D.box);
+  case 'assign':return R('Change a box',`This puts a new value into the box <b>${esc(s.name)}</b>.${peek?'':` ${sensedTxt(e)}Now <b>${esc(s.name)}</b> = ${fv(e.v)}.`}`,D.box);
+  case 'return':return R('Leave main','<b>return</b> ends main. After this, the program stops.',[]);
+  case 'loopEnd':return R('Back to the top',`This <code>}</code> closes the while loop. One round is done, so the robot jumps back up to line ${s.line} to check again.`,D.while);
+  case 'end':return R('The end',peek?'This <code>}</code> is the end of main. If there is a while (true) loop above, the robot never gets here!':'The robot reached the last <code>}</code>. There is nothing left to do, so the program stops.',[]);
+  case 'brace':return R('A closing brace','<code>{ }</code> is like a room that holds a group of commands. <code>}</code> closes the room door.',[]);
+  case 'blank':return R('An empty line','Empty lines make code easier to read, like spaces between paragraphs. The robot skips them.',[]);
+  case 'call':switch(s.name){
+    case 'vexcodeInit':return R('Warm-up time','<b>Init</b> is short for initialize, which means “get ready”. The robot checks its parts: Is the bumper plugged into port H? Is the screen ready? Ready!',D.init);
+    case 'wait':{const n=peek?lit(s.args[0]):e.n,ms=peek?(s.unit==='msec'?n:n*1000):e.ms;const sec=typeof ms==='number'?+(ms/1000).toFixed(3):'…';
+      return R('Take a tiny break',`<b>wait</b> means pause. ${n} ${s.unit} = ${sec} seconds.${ms<=100?' That is faster than one blink!':ms>=1000?' That is long enough to notice.':''}${!peek&&ms<600?' (Here we show it in slow motion.)':''}`,D.wait)}
+    case 'Brain.Screen.printAt':{const x=peek?lit(s.args[0]):e.x,y=peek?lit(s.args[1]):e.y,txt=peek?lit(s.args[2]):e.txt,f=peek?lit(s.args[2]):e.fmt;
+      return R('Write on the screen',`<b>printAt</b> means “write at a spot”. It writes <code>${esc(txt)}</code> at x = ${esc(x)} (across →) and y = ${esc(y)} (down ↓).${/ {2,}$/.test(txt)?' The spaces at the end work like an eraser for old letters.':''}${/%d/.test(f)?(peek||!e.vals||!e.vals.length?' The <code>%d</code> is a seat saved for a number. The number after the comma sits there.':` The <code>%d</code> is a seat saved for a number. ${e.names[0]?`Right now <b>${esc(e.names[0])}</b> = <b>${esc(Math.trunc(Number(e.vals[0])))}</b>, so ${esc(Math.trunc(Number(e.vals[0])))} sits in the seat.`:`The number ${esc(e.vals[0])} sits in the seat.`}`)+(/%d$/.test(f)?' Watch out: with no spaces after %d, a shorter number can leave old digits behind (see Lab 3).':''):''}`,D.printAt)}
+    case 'Brain.Screen.clearScreen':return R('Erase the whole screen','<b>clearScreen</b> wipes the whole screen clean, like erasing a whiteboard. Tip: if you do this in every round of a fast loop, the screen flickers.',D.clear);
+    case 'Brain.Screen.clearLine':return R('Erase one line','<b>clearLine</b> wipes one line of the screen, not the whole thing.',D.clear);
+    case 'Brain.Screen.setPenColor':return R('Change the pen color',`From now on, new text is written in <b>${s.color}</b>.`,D.pen);
+  }}
+  return R('','',[]);
+}
+
+/* ================= Editor ================= */
+const ta=$('src'),layer=$('layer'),gutter=$('gutter'),robot=$('robot');
+let lineEls=[],gEls=[],lineMap=new Map(),prog=null,errLine=null;
+function paint(){
+  const ls=ta.value.split('\n');
+  layer.innerHTML=ls.map(l=>`<div class="hl-ln">${hl(l)||' '}</div>`).join('');
+  gutter.innerHTML=ls.map((_,i)=>`<div class="g" data-l="${i+1}"><span class="num">${i+1}</span><span class="ptr">▶</span></div>`).join('');
+  lineEls=[...layer.children];gEls=[...gutter.children];
+  layer.style.transform=`translateX(${-ta.scrollLeft}px)`;
+  decorate();
+}
+ta.addEventListener('scroll',()=>{layer.style.transform=`translateX(${-ta.scrollLeft}px)`});
+ta.addEventListener('keydown',e=>{
+  if(e.key==='Tab'&&!e.shiftKey&&!tabEscape){e.preventDefault();const a=ta.selectionStart,b=ta.selectionEnd;ta.setRangeText('    ',a,b,'end');ta.dispatchEvent(new Event('input'))}
+  if(e.key==='Escape')tabEscape=true;else if(e.key!=='Tab')tabEscape=false;
+  if(e.key==='Enter'){e.preventDefault();const a=ta.selectionStart;const lineStart=ta.value.lastIndexOf('\n',a-1)+1;const ind=(ta.value.slice(lineStart,a).match(/^\s*/)||[''])[0];
+    const extra=ta.value[a-1]==='{'?'    ':'';ta.setRangeText('\n'+ind+extra,a,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input'))}
+});
+let tabEscape=false;
+gutter.addEventListener('click',e=>{const g=e.target.closest('.g');if(g)peek(+g.dataset.l)});
+
+function buildLineMap(p){
+  lineMap=new Map();const put=(l,v)=>{if(!lineMap.has(l))lineMap.set(l,v)};
+  p.top.forEach(s=>put(s.line,{kind:s.k,s}));put(p.main.line,{kind:'main',s:p.main});
+  const walk=b=>b.forEach(s=>{
+    if(s.k==='while'){put(s.line,{kind:'while',s});walk(s.body);put(s.end,{kind:'loopEnd',s})}
+    else if(s.k==='if'){put(s.line,{kind:'if',s});walk(s.then);put(s.thenEnd,{kind:'brace'});if(s.els){if(!s.elseIf)put(s.elseLine,{kind:'else',s});walk(s.els);put(s.elsEnd,{kind:'brace'})}}
+    else put(s.line,{kind:s.k==='call'?'call':s.k,s});});
+  walk(p.main.body);put(p.main.end,{kind:'end'});
+}
+function compile(){
+  try{prog=parse(ta.value);errLine=null;buildLineMap(prog);return true}
+  catch(e){prog=null;if(e&&e.line){errLine=e.line;showError(e.line,e.msg,false)}else{errLine=null;showError(1,'Something went wrong. Try Undo my changes.',false);console.error(e)}return false}
+}
+
+/* ================= Controller ================= */
+const sim=Screen($('simScreen'),true);
+let pressed=false,gen=null,ctx=null,evCount=0,reads=[],replayQ=[],cur=null,visited=new Set(),skip=new Set(),finished=false,rounds=0,firstWhile=null,runErr=null;
+function start(){
+  sim.reset();visited=new Set();skip=new Set();cur=null;finished=false;rounds=0;firstWhile=null;runErr=null;evCount=0;reads=[];
+  ctx={screen:sim,read(){const v=replayQ.length?replayQ.shift():pressed;reads.push(v);return v}};
+  gen=prog?makeRun(prog,ctx)():null;
+}
+function advance(){
+  if(!gen||finished||runErr)return null;
+  let r;try{r=gen.next()}catch(e){runErr=e;if(e&&e.line){errLine=e.line;showError(e.line,e.msg,true)}else console.error(e);stopAll();return null}
+  if(r.done){finished=true;return null}
+  evCount++;const ev=r.value;
+  if(ev.kind==='while'){visited.clear();skip.clear();if(!firstWhile)firstWhile=ev.s;if(ev.s===firstWhile)rounds=ev.n}
+  else if(cur)visited.add(cur.line);
+  if(ev.kind==='if')ev.skip.forEach(l=>skip.add(l));
+  cur=ev;return ev;
+}
+function decorate(hot){
+  lineEls.forEach((el,i)=>{const l=i+1;
+    el.classList.toggle('now',!hot&&!!cur&&cur.line===l);el.classList.toggle('skip',skip.has(l));
+    el.classList.toggle('hot',!!hot&&(visited.has(l)||(cur&&cur.line===l)));el.classList.toggle('err',errLine===l);el.classList.remove('peek')});
+  gEls.forEach((g,i)=>{const l=i+1;g.classList.toggle('now',!hot&&!!cur&&cur.line===l);g.classList.toggle('err',errLine===l)});
+}
+function render(){
+  decorate(false);
+  $('loopVal').textContent=rounds;
+  robot.classList.toggle('warm',!!cur&&cur.fn==='init');
+  robot.classList.toggle('asking',!!cur&&cur.sensed!==undefined);
+  if(cur&&cur.sensed!==undefined)$('askText').textContent=`pressing() → ${cur.sensed}`;
+  const wb=$('waitbar');wb.hidden=!(cur&&cur.fn==='wait');wb.classList.remove('go');if(!wb.hidden){void wb.offsetWidth;wb.classList.add('go')}
+  $('backBtn').disabled=evCount<1||!!turbo;
+  $('nextBtn').disabled=!prog||finished||!!runErr||!!turbo;
+  if(runErr||(!prog&&errLine))return;
+  if(finished){setN('Finished','','The program is done','The robot ran every line. Press <b>Restart</b> to run it again.',[],'');return}
+  if(!cur){setN('Not started','','Ready?','When the robot turns on, it starts reading at the very top. Each time you press <b>Next step</b>, it does one line.',[],'');return}
+  const x=explain(cur,false);setN(`Now on line ${cur.line}`,lineText(cur.line),x.t,x.x,x.d,'');
+  if(gEls[cur.line-1])gEls[cur.line-1].scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+const lineText=l=>(ta.value.split('\n')[l-1]||'').trim();
+function setN(badge,code,title,text,dict,kind){
+  const narr=$('narr');narr.classList.toggle('error',kind==='err');
+  const b=$('nBadge');b.textContent=badge;b.className='badge'+(kind==='peek'?' peekb':kind==='err'?' errb':'');
+  const c=$('nCode');c.hidden=!code;c.innerHTML=hl(code);
+  $('nTitle').textContent=title;$('nText').innerHTML=text;
+  $('nDict').innerHTML=(dict||[]).map(([w,m])=>`<span><b>${esc(w)}</b>${esc(m)}</span>`).join('');
+}
+function showError(line,msg,runtime){
+  decorate(false);
+  setN(`Problem on line ${line}`,lineText(line),runtime?'The robot got stuck':'The robot can’t read this yet',`${msg}<br><span class="hint">Fix it and the robot will try again. Mistakes are normal: every programmer makes them!</span>`,[],'err');
+  $('nextBtn').disabled=true;
+}
+function peek(l){
+  stopPlay();decorate(!!turbo);lineEls[l-1]&&lineEls[l-1].classList.add('peek');
+  let info=lineMap.get(l);const txt=lineText(l);
+  if(!info)info={kind:txt===''?'blank':txt==='}'||txt==='{'?'brace':'blank'};
+  if(!prog){setN(`Line ${l}`,txt,'Fix the problem first','Once the code has no problems, I can explain each line.',[],'peek');return}
+  const x=explain(info,true);setN(`Looking at line ${l} (not running it)`,txt,x.t,x.x,x.d,'peek');
+}
+function step(){stopTurbo();advance();render()}
+function back(){
+  const target=evCount-1;const q=reads.slice();start();replayQ=q;
+  for(let i=0;i<target;i++)advance();replayQ=[];render();
+}
+function restart(){stopAll();if(!prog&&!compile())return;start();render()}
+
+/* play */
+let playT=null;
+function stopPlay(){clearInterval(playT);playT=null;$('playBtn').textContent='Auto play';$('playBtn').classList.remove('on')}
+function startPlay(){stopTurbo();if(finished||runErr)restart();playT=setInterval(()=>{advance();render();if(finished||runErr)stopPlay()},+$('speed').value);$('playBtn').textContent='Pause';$('playBtn').classList.add('on')}
+$('playBtn').onclick=()=>playT?stopPlay():(advance(),render(),startPlay());
+$('speed').onchange=()=>{if(playT){stopPlay();startPlay()}};
+$('nextBtn').onclick=()=>{stopPlay();step()};
+$('backBtn').onclick=()=>{stopPlay();back()};
+$('resetBtn').onclick=restart;
+
+/* real speed */
+let turbo=null,sleep=0;
+function stopTurbo(){if(!turbo)return;clearInterval(turbo);turbo=null;$('turbo').hidden=true;$('turboBtn').textContent='Real speed';$('turboBtn').classList.remove('on');render()}
+function stopAll(){stopPlay();if(turbo){clearInterval(turbo);turbo=null;$('turbo').hidden=true;$('turboBtn').textContent='Real speed';$('turboBtn').classList.remove('on')}}
+function startTurbo(fresh){
+  stopPlay();if(!prog)return;if(fresh||finished||runErr)start();sleep=0;
+  $('turbo').hidden=false;$('turboBtn').textContent='Stop real speed';$('turboBtn').classList.add('on');
+  robot.classList.remove('asking','warm');$('waitbar').hidden=true;
+  setN('Real speed','','Full speed ahead!','No more slow motion. The robot runs the code as fast as a real VEX Brain. The green lines are the path it took in this round.',[],'');
+  $('nextBtn').disabled=true;$('backBtn').disabled=true;
+  turbo=setInterval(()=>{
+    if(sleep>0){sleep-=20;return}
+    let budget=0,n=0;
+    while(budget<20&&n<4000){const ev=advance();n++;if(!ev){break}if(ev.fn==='wait')budget+=ev.ms}
+    if(budget>20)sleep=budget-20;
+    decorate(true);$('turboN').textContent=rounds;$('loopVal').textContent=rounds;
+    if(finished||runErr){clearInterval(turbo);turbo=null;$('turboBtn').textContent='Real speed';$('turboBtn').classList.remove('on');if(finished)render()}
+  },20);
+}
+$('turboBtn').onclick=()=>turbo?stopTurbo():startTurbo(false);
+
+/* editing */
+let editT=null;
+ta.addEventListener('input',()=>{paint();clearTimeout(editT);editT=setTimeout(()=>{
+  const wasTurbo=!!turbo;stopAll();
+  if(compile()){start();if($('live').checked||wasTurbo)startTurbo(true);else render()}
+  else{decorate(false);$('turbo').hidden=true}
+},450)});
+function load(key){ta.value=EX[key];ta.scrollLeft=0;paint();stopAll();if(compile()){start();render()}}
+$('examples').onchange=e=>load(e.target.value);
+$('resetCode').onclick=()=>load($('examples').value);
+
+/* bumper */
+function setBump(v){pressed=v;robot.classList.toggle('pressed',v);
+  for(const b of [$('bumpBtn'),$('bump2')]){b.setAttribute('aria-pressed',v);b.textContent=v?'Let go of the bumper':'Press the bumper'}
+  const lv=$('liveVal');lv.textContent=v;lv.className='v '+(v?'t':'fz');const bx=$('boolBox');bx.textContent=v;bx.className='box '+(v?'t':'fz');}
+$('bumpBtn').onclick=()=>setBump(!pressed);$('bump2').onclick=()=>setBump(!pressed);
+let spaceHeld=false;
+addEventListener('keydown',e=>{if(e.code==='Space'&&!spaceHeld&&!/INPUT|BUTTON|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();spaceHeld=true;setBump(true)}});
+addEventListener('keyup',e=>{if(e.code==='Space'&&spaceHeld){spaceHeld=false;setBump(false)}});
+
+load('bumper');
+
+/* ================= Word cards ================= */
+const WORDS=[
+ ['#include','bring in','Bring the toolbox in, so you can use the tools inside.','include'],
+ ['using namespace vex;','use the VEX names','We agree to speak “VEX” from now on.','using namespace'],
+ ['int main()','the main program','The first page of the story. The robot starts here.','main'],
+ ['vexcodeInit();','get ready','Warm-up before the game.','init'],
+ ['while (true)','as long as it is true, keep going','Like the repeat button on a music player.','while true'],
+ ['bool','a true/false box','A box that can only hold true or false.','bool'],
+ ['BumperH','the bumper on port H','A name we gave the sensor, like a nickname.','bumper H'],
+ ['.pressing()','is it being pressed?','A question. The answer is true or false.','pressing'],
+ ['if','only if','If it rains, take an umbrella.','if'],
+ ['else','otherwise','Otherwise, wear a hat.','else'],
+ ['{ }','a room for commands','Braces keep a group of commands together.','braces'],
+ ['Brain.Screen','the Brain’s screen','The Brain is the robot’s computer. Screen is its display.','brain screen'],
+ ['printAt(x, y, "text")','write text at (x, y)','Like writing in one square of graph paper.','print at'],
+ ['%d','a seat for a number','"Speed = %d" + speed → Speed = 42','percent d'],
+ ['clearScreen()','erase the whole screen','Wipe the whole whiteboard.','clear screen'],
+ ['clearLine()','erase one line','Wipe just one line of the whiteboard.','clear line'],
+ ['wait(20, msec)','pause for 20 milliseconds','0.02 seconds. Faster than a blink!','wait twenty milliseconds'],
+];
+$('cards').innerHTML=WORDS.map(([w,m,eg,say])=>`<div class="card"><div class="w"><span>${esc(w)}</span><button data-say="${say}" aria-label="Say ${say}">Say it</button></div><div class="zh">${m}</div><div class="eg">${eg}</div></div>`).join('');
+$('cards').addEventListener('click',e=>{const b=e.target.closest('[data-say]');if(!b)return;
+  try{const u=new SpeechSynthesisUtterance(b.dataset.say);u.lang='en-US';u.rate=.8;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(_){}});
+
+/* ================= Playground ================= */
+const pgEl=$('pgScreen'),pg=Screen(pgEl,false);
+pg.print(1,20,'pomp');pg.print(1,40,'NoNo');
+const dot=document.createElement('div');dot.className='dot';pgEl.appendChild(dot);
+const ax=document.createElement('div');ax.className='axis';pgEl.appendChild(ax);
+function pgUpdate(){const x=+$('px').value,y=+$('py').value,t=$('ptxt').value.replace(/"/g,'');
+  $('pxv').textContent=x;$('pyv').textContent=y;
+  dot.style.left=(Math.floor(x/10)*10/480*100)+'%';dot.style.top=(y/240*100)+'%';
+  ax.textContent=`(${x}, ${y})`;ax.style.left=Math.min(Math.floor(x/10)*10/480*100+2,80)+'%';ax.style.top=Math.min(y/240*100+3,90)+'%';
+  $('pgCode').innerHTML=hl(`Brain.Screen.printAt(${x}, ${y}, "${t}");`)}
+['px','py','ptxt'].forEach(id=>$(id).addEventListener('input',pgUpdate));
+$('pgPrint').onclick=()=>pg.print(+$('px').value,+$('py').value,$('ptxt').value.replace(/"/g,''));
+$('pgClear').onclick=()=>pg.clear();$('pgLine').onclick=()=>pg.clearLine();
+pgUpdate();
+
+/* ================= %d lab ================= */
+const dScr=Screen($('dScreen'),false);
+function dUpdate(pop){
+  const v=Math.max(0,Math.min(120,+$('dSpeed').value)),sp=$('dSpaces').checked;
+  const fmt='Speed = %d'+(sp?'   ':''),txt=format(fmt,[v]);
+  $('dSpeedV').textContent=v;$('dVar').textContent=v;$('dSeatV').textContent=v;$('dTail').textContent=(sp?'   ':'')+'"';
+  $('dCode').innerHTML=hl(`Brain.Screen.printAt(1, 40, "${fmt}", speed);`);
+  dScr.print(1,40,txt);
+  const shown=$('dScreen').textContent.trimEnd();
+  $('dShows').innerHTML=`The robot builds <code>${esc(txt)}</code>. The screen now shows <code>${esc(shown.trim())}</code>.`;
+  if(pop){const s=$('dSeat');s.classList.remove('pop');void s.offsetWidth;s.classList.add('pop')}
+}
+const dSet=v=>{$('dSpeed').value=v;dUpdate(true)};
+$('dSpeed').addEventListener('input',()=>dUpdate(true));
+$('dPlus').onclick=()=>dSet(+$('dSpeed').value+1);$('dMinus').onclick=()=>dSet(+$('dSpeed').value-1);
+$('dTen').onclick=()=>dSet(10);$('dNine').onclick=()=>dSet(9);
+$('dSpaces').onchange=()=>dUpdate(false);
+dUpdate(false);
+
+/* ================= Quiz ================= */
+const Q=[
+ ['What does <code>bool</code> store?',['Text only','True or false','Decimal numbers'],1,'Yes! A bool is a true/false box.'],
+ ['What does <code>BumperH.pressing()</code> check?',['Motor speed','Battery level','Whether the bumper is pressed'],2,'Yes! pressing means “is it being pressed right now?”'],
+ ['What does <code>while (true)</code> do?',['Repeats code continuously','Runs once','Stops the robot'],0,'Yes! true is always true, so it repeats forever.'],
+ ['What does <code>else</code> mean?',['Repeat forever','Run when the if condition is false','Clear the screen'],1,'Yes! else means “otherwise”.'],
+ ['<code>int speed = 7;</code><br><code>printAt(1, 40, "Speed = %d", speed);</code><br>What does the screen show?',['Speed = %d','Speed = speed','Speed = 7'],2,'Yes! The value of speed, 7, sits in the %d seat.'],
+];
+const right=new Set();
+$('quiz').innerHTML=Q.map(([q,opts],qi)=>`<div class="q" data-q="${qi}"><div class="qt">${qi+1}. ${q}</div>${opts.map((o,oi)=>`<button class="opt" data-o="${oi}">${o}</button>`).join('')}<div class="fb" aria-live="polite"></div></div>`).join('');
+$('quiz').addEventListener('click',e=>{const b=e.target.closest('.opt');if(!b)return;const box=b.closest('.q'),qi=+box.dataset.q,oi=+b.dataset.o;
+  box.querySelectorAll('.opt').forEach(o=>o.classList.remove('right','wrong'));
+  if(oi===Q[qi][2]){b.classList.add('right');box.querySelector('.fb').textContent=Q[qi][3];right.add(qi)}
+  else{b.classList.add('wrong');box.querySelector('.fb').textContent='Almost! Go back to Lab 1, read that line again, and try once more.'}
+  $('score').textContent=`${right.size} of ${Q.length} correct`+(right.size===Q.length?'. All correct. You can read code now!':'');});
+})();
+</script>
+
+</body></html>
