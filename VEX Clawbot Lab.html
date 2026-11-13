@@ -226,6 +226,18 @@ button.small{font-size:13px;padding:5px 10px}
 .cheat dt{font-family:var(--f-code);font-weight:700}
 .cheat dd{margin:0}
 .cheat code{background:var(--bg);padding:0 5px;border-radius:4px;font-size:14px}
+.stabs{display:flex;gap:8px;flex-wrap:wrap}
+.stab{display:flex;gap:10px;align-items:center;padding:8px 16px 8px 8px;border-radius:12px;font-size:16px}
+.stab .n{width:28px;height:28px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-weight:800}
+.stab small{font-weight:400;color:var(--muted);font-size:13px}
+.stab.act{border-color:var(--claw);box-shadow:0 0 0 2px var(--claw)}
+.stab.act .n{background:var(--claw);color:#fff}
+.cin{font:inherit;font-size:15px;line-height:22px;height:28px;width:min(36ch,calc(100% - 20px));background:#ffd84d1c;border:2px dashed var(--hl);color:#fff;border-radius:6px;padding:0 8px;caret-color:#fff}
+.cin::placeholder{color:#ffd84d99;font-style:italic}
+.cin:focus{outline:none;box-shadow:0 0 0 3px #ffd84d66}
+.cin.ok{border:2px solid #3fd3a2;color:#3fd3a2;background:#3fd3a222;font-weight:700}
+.cin:disabled:not(.ok){opacity:.35}
+.sl.inl{align-items:center;min-height:32px}
 .mtiles{display:flex;flex-wrap:wrap;gap:8px}
 .mtile{font-size:15px;border-radius:12px;padding:6px 14px 6px 6px;display:flex;gap:8px;align-items:center}
 .mtile .n{width:28px;height:28px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-weight:800;font-size:14px}
@@ -307,7 +319,12 @@ body.has-bar{padding-bottom:120px}
     <p class="lead">The yellow arrow ▶ shows the line the robot is reading. The code is yours: click inside it and type. With <b>Run as I type</b> on, the robot restarts with your new code. Click a line number to learn what that line means.</p>
   </div>
   <div class="chal story" id="story">
-    <div class="eyebrow">Story mission · fill in the code</div>
+    <div class="eyebrow">Story missions</div>
+    <div class="stabs" role="tablist">
+      <button role="tab" class="stab act" data-tab="A" aria-selected="true"><span class="n">1</span>The tidy-up robot <small>choose the words</small></button>
+      <button role="tab" class="stab" data-tab="B" aria-selected="false"><span class="n">2</span>Pizza delivery <small>type the code</small></button>
+    </div>
+    <div id="storyA">
     <h3 class="story-title">The tidy-up robot</h3>
     <p class="story-text">Oh no! The classroom floor is messy. A yellow cube is lying in the middle of the room. Your robot must pick it up and put it in the <b>toy box</b> in the corner, <b>all by itself</b>. Nobody can use the controller. Write the program by choosing the missing word for each blank.</p>
     <div class="sgrid">
@@ -323,6 +340,27 @@ body.has-bar{padding-bottom:120px}
             <dt>Motor10</dt><dd>the left wheel</dd>
             <dt>wait</dt><dd><code>seconds</code> or <code>msec</code> (1000 msec = 1 second)</dd>
           </dl>
+        </div>
+      </div>
+    </div>
+    </div>
+    <div id="storyB" hidden>
+      <h3 class="story-title">Pizza delivery</h3>
+      <p class="story-text">The class ordered pizza! Your robot is holding the pizza box in its claw. It must drive to the <b>teacher’s desk</b> and put the pizza down, all by itself. Most of the program is ready. <b>You type the 3 missing lines</b> in the yellow boxes.</p>
+      <div class="sgrid">
+        <div class="scode" id="pCode" aria-label="The pizza program with 3 lines to type"></div>
+        <div class="sside">
+          <div class="sq" id="pQ" aria-live="polite"></div>
+          <div class="cheat">
+            <div class="cheat-t">Typing tips</div>
+            <dl>
+              <dt>;</dt><dd>Every line ends with a semicolon.</dd>
+              <dt>Aa</dt><dd>Big and small letters matter: <code>Motor1</code> is not <code>motor1</code>.</dd>
+              <dt>( , )</dt><dd>Brackets come in pairs. Commas go between the parts.</dd>
+              <dt>.</dt><dd>A dot joins a name and a command: <code>claw.spin</code></dd>
+              <dt>claw</dt><dd><code>forward</code> = close · <code>reverse</code> = open</dd>
+            </dl>
+          </div>
         </div>
       </div>
     </div>
@@ -1110,7 +1148,8 @@ let scene=SCENES.free;
 const W={};
 function resetWorld(sc){if(sc)scene=sc;const [x,y,th]=scene.robot;
   Object.assign(W,{x,y,th,arm:-20,claw:.2,prevClaw:.2,trail:[],armStall:false,L:0,R:0,clawP:0,everHeld:false,touched:false});
-  W.cube=scene.cube?{x:scene.cube[0],y:scene.cube[1],held:false}:null}
+  W.cube=scene.cube?{x:scene.cube[0],y:scene.cube[1],held:false}:null;
+  if(scene.held){W.claw=.85;W.prevClaw=.85;W.arm=-5;const a=W.th;W.cube={x:x+Math.sin(a)*50,y:y-Math.cos(a)*50,held:true}}}
 resetWorld();
 $('resetRobot').onclick=()=>resetWorld();
 const SPD=130,TRACK=58,REACH=50;
@@ -1285,7 +1324,7 @@ const BLANKS=[
  {q:'Step 6. Let go of the cube in the toy box. The claw must <b>open</b>.',a:'reverse',opts:{stop:'stop keeps the claw closed. The cube would not drop.',reverse:'',forward:'forward <b>closes</b> the claw. The cube would stay stuck!'}},
 ];
 const WHY_OK=['The arm goes down.','The claw opens wide.','The robot waits 1 second.','The right wheel rolls ahead.','1.5 seconds × 65 ≈ 100 units. Just right!','Both wheels are stopped now.','The claw closes around the cube.','The arm lifts the cube off the floor.','One wheel forward, one wheel backward: the robot spins left.','The claw opens and the cube drops into the toy box.'];
-let sAns=Array(BLANKS.length).fill(null),sCur=0,sWrong={},sJustOk=false,storyRun=false,storyFull=false,storyMsg='';
+let storyKind='tidy',sAns=Array(BLANKS.length).fill(null),sCur=0,sWrong={},sJustOk=false,storyRun=false,storyFull=false,storyMsg='';
 function blankLine(i){return STORY.findIndex(l=>l.includes(`{${i}}`))}
 function sectionStarts(){const r=[];STORY.forEach((l,i)=>{if(/^\s*\/\/ \d\./.test(l))r.push(i)});return r}
 function lastReadyLine(){
@@ -1348,11 +1387,12 @@ function runStory(full){
   ta.value=code;ta.scrollTop=0;ta.scrollLeft=0;paint();stopAll();
   if(!compile())return;
   ctrl.ax=[0,0,0,0,0];showAxes();for(const b of Object.keys(btnEls))setBtn(b,false);
-  resetWorld(SCENES.tidy);start();storyRun=true;storyFull=full;storyMsg='';startTurbo(true);
+  resetWorld(SCENES.tidy);start();storyRun=true;storyFull=full;storyKind='tidy';storyMsg='';startTurbo(true);
   document.querySelector('.views').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function checkStory(){
   if(!storyRun||!finished)return;storyRun=false;
+  if(storyKind==='pizza'){pizzaDone();return}
   if(!storyFull)return;
   const c=W.cube,ok=c&&!c.held&&inZone(c.x,c.y);
   storyMsg=ok?'★ The room is clean! You wrote a whole robot program by yourself.':'Hmm, the cube is not in the toy box. Press Run again to watch closely.';
@@ -1361,6 +1401,147 @@ function checkStory(){
 }
 const inZone=(x,y)=>{const z=scene.zone;return z&&x>z[0]&&x<z[0]+z[2]&&y>z[1]&&y<z[1]+z[3]};
 drawStory();
+
+/* ================= Story 2: Pizza delivery (typing) ================= */
+SCENES.pizza={robot:[200,340,0],cube:null,held:true,zone:[140,40,120,110,'DESK']};
+const PIZZA=`#include "vex.h"
+using namespace vex;
+
+vex::brain Brain;
+motor Motor1 = motor(PORT1);
+motor Motor10 = motor(PORT10);
+motor arm(PORT8, ratio18_1, true);
+motor claw(PORT3, ratio18_1, false);
+
+int main(){
+   Brain.Screen.printAt(1, 20, "Pizza time!");
+
+   // 1. Drive to the teacher's desk
+   Motor10.spin(forward, 50, percent);
+   [0]
+   [1]
+   Motor1.stop();
+   Motor10.stop();
+
+   // 2. Put the pizza down
+   arm.spin(reverse, 50, percent);
+   wait(500, msec);
+   arm.stop();
+   [2]
+   wait(1, seconds);
+   claw.stop();
+}`.split('\n');
+const sqz=t=>t.replace(/\s+/g,'');
+const P=[
+ {title:'Make the other wheel spin',
+  text:'Only the left wheel (<code>Motor10</code>) spins right now. The robot would drive in a circle! Type a line that makes <b>Motor1</b>, the right wheel, spin forward too.',
+  ex:'Motor10.spin(forward, 50, percent);',exNote:'Look at the line above the yellow box. Your line is almost the same!',
+  ph:'type here: Motor1...',
+  ok:t=>sqz(t)==='Motor1.spin(forward,50,percent);',
+  tip:t=>{const q=sqz(t);
+    if(!q)return'Click the yellow box and type your line.';
+    if(/^Motor10/.test(q))return'Motor10 already spins. We need the other wheel: <code>Motor1</code>.';
+    if(/^motor1/i.test(q)&&!/^Motor1/.test(q))return'Check big and small letters: <code>Motor1</code> starts with a big M.';
+    if(/reverse/.test(q))return'reverse rolls backward. We want <code>forward</code>.';
+    if(!q.endsWith(';'))return'Almost! Every line ends with a semicolon <code>;</code>';
+    if((q.match(/\(/g)||[]).length!==(q.match(/\)/g)||[]).length)return'Check the brackets: every <code>(</code> needs a <code>)</code>.';
+    if(/^Motor1\.spin\(forward,\d+,percent\);$/.test(q))return'Use <code>50</code>, the same speed as Motor10, so the robot drives straight.';
+    if(!/^Motor1\./.test(q))return'Start with <code>Motor1.</code> (the name, then a dot).';
+    return'Compare with the line above, letter by letter. Look for a missing dot <code>.</code> or comma <code>,</code>';},
+  good:'Now both wheels spin forward. Next, tell the robot how long to drive.'},
+ {title:'How long should it drive?',
+  text:'The teacher’s desk is about <b>3 seconds</b> away. Type a <b>wait</b> line, so the wheels keep rolling for 3 seconds before they stop.',
+  ex:'wait(1, seconds);',exNote:'This line waits for 1 second. You need 3 seconds.',
+  ph:'type here: wait...',
+  ok:t=>{const m=sqz(t).match(/^wait\(([\d.]+),(seconds|sec|msec)\);$/);if(!m)return false;const sec=m[2]==='msec'?+m[1]/1000:+m[1];return sec>=2.6&&sec<=3.4},
+  tip:t=>{const q=sqz(t);
+    if(!q)return'Click the yellow box and type your line.';
+    if(/^Wait/.test(q))return'<code>wait</code> starts with a small w.';
+    if(!q.endsWith(';'))return'Almost! Every line ends with a semicolon <code>;</code>';
+    const m=q.match(/^wait\(([\d.]+),(seconds|sec|msec)\);$/);
+    if(m){const sec=m[2]==='msec'?+m[1]/1000:+m[1];if(m[2]==='msec'&&+m[1]<100)return`${m[1]} msec is super short! Use <code>seconds</code>, or write <code>3000</code> msec.`;
+      return sec<2.6?'That is too short. The robot would stop before the desk. The desk is about 3 seconds away.':'That is too long. The robot would drive past the desk!'}
+    if(/^wait\([\d.]+\);$/.test(q))return'Add the unit after a comma: <code>wait(3, seconds);</code>';
+    if(/^wait\(/.test(q))return'Check the inside of the brackets: a number, a comma, then <code>seconds</code>.';
+    return'Start with <code>wait(</code>. Look at the example line.';},
+  good:'Watch the field: the robot drives to the desk and stops!',run:'part'},
+ {title:'Drop the pizza',
+  text:'The arm is down now. Open the <b>claw</b>, so the pizza box slides out onto the desk. Use speed 50.',
+  ex:'claw.spin(forward, 50, percent);',exNote:'This line <b>closes</b> the claw. You need the opposite direction!',
+  ph:'type here: claw...',
+  ok:t=>{const m=sqz(t).match(/^claw\.spin\(reverse,(\d+),percent\);$/);return !!m&&+m[1]>=10&&+m[1]<=100},
+  tip:t=>{const q=sqz(t);
+    if(!q)return'Click the yellow box and type your line.';
+    if(/^Claw/.test(q))return'<code>claw</code> starts with a small c, just like on line 8.';
+    if(/^arm/.test(q))return'The arm is already down. Which motor opens? The <code>claw</code>.';
+    if(/forward/.test(q))return'<code>forward</code> closes the claw. Use <code>reverse</code> to open it.';
+    if(!q.endsWith(';'))return'Almost! Every line ends with a semicolon <code>;</code>';
+    if((q.match(/\(/g)||[]).length!==(q.match(/\)/g)||[]).length)return'Check the brackets: every <code>(</code> needs a <code>)</code>.';
+    return'Compare with the example line, letter by letter. Change only the direction.';},
+  good:'The claw opens. Watch the robot deliver the pizza!',run:'full'},
+];
+let pAns=[null,null,null],pCur=0,pMsg='',pTip='';
+const pLine=k=>PIZZA.findIndex(l=>l.trim()===`[${k}]`);
+function pizzaCode(upto){
+  const end=upto==='full'?PIZZA.length:PIZZA.findIndex(l=>/\/\/ 2\./.test(l));
+  const ls=PIZZA.slice(0,end).map(l=>l.replace(/\[(\d)\]/,(m,k)=>pAns[+k]||''));if(upto!=='full')ls.push('}');return ls.join('\n')}
+function drawPizzaCode(){
+  $('pCode').innerHTML=PIZZA.map((l,i)=>{const m=l.match(/^(\s*)\[(\d)\]$/);
+    if(!m)return`<div class="sl"><span class="ln">${i+1}</span><span>${hl(l)||' '}</span></div>`;
+    const k=+m[2];return`<div class="sl inl"><span class="ln">${i+1}</span><span style="white-space:pre">${m[1]}</span><input class="cin${pAns[k]?' ok':''}" id="cin${k}" data-k="${k}" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Line ${i+1}: type the missing line" placeholder="${P[k].ph}" ${k!==pCur||pAns[k]?'disabled':''} value="${pAns[k]?esc(pAns[k]):''}"></div>`}).join('');
+}
+function drawPizzaQ(focus){
+  const q=$('pQ');
+  if(pCur>=P.length){q.innerHTML=`<div class="prog">${P.map(()=>'<span class="dot ok"></span>').join('')} <span>all 3 lines typed!</span></div>
+    <div class="big">You typed the whole missing code!</div>
+    <div class="sbtns"><button class="primary" data-prun>Run it again ▶</button></div>
+    <div class="fbk ${pMsg.startsWith('★')?'good':'bad'}">${pMsg}</div>
+    <button class="small" data-preset style="align-self:flex-start">Start over</button>`;return}
+  const st=P[pCur];
+  q.innerHTML=`<div class="prog">${P.map((_,i)=>`<span class="dot${pAns[i]?' ok':i===pCur?' cur':''}"></span>`).join('')} <span>line ${pCur+1} of ${P.length}</span></div>
+    ${pMsg?`<div class="fbk good">${pMsg}</div>`:''}
+    <div class="qtext">${st.title}</div>
+    <div>${st.text}</div>
+    <div class="hint">${st.exNote}</div>
+    <div class="qline">${hl(st.ex)}</div>
+    <div class="sbtns"><button class="primary" data-pcheck>Check my line ✓</button><button class="small" data-pfocus>Go to the yellow box</button></div>
+    <div class="fbk bad" id="pTip">${pTip}</div>`;
+  if(focus){const inp=$('cin'+pCur);if(inp)inp.focus({preventScroll:true})}
+}
+function drawPizza(focus){drawPizzaCode();drawPizzaQ(focus)}
+function pizzaAccept(k,val){
+  pAns[k]=val.trim().replace(/\s+/g,' ');pTip='';pMsg='✓ '+P[k].good;pCur=k+1;
+  const run=P[k].run;drawPizza(true);
+  if(run)setTimeout(()=>runPizza(run),400);
+}
+function pizzaCheck(){const inp=$('cin'+pCur);if(!inp)return;const v=inp.value;
+  if(P[pCur].ok(v))pizzaAccept(pCur,v);else{pTip=P[pCur].tip(v);pMsg='';$('pTip').innerHTML=pTip;inp.focus()}}
+$('pCode').addEventListener('input',e=>{const inp=e.target.closest('.cin');if(!inp)return;const k=+inp.dataset.k;
+  if(P[k].ok(inp.value))pizzaAccept(k,inp.value);else if(pTip){pTip='';$('pTip').innerHTML=''}});
+$('pCode').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.closest('.cin')){e.preventDefault();pizzaCheck()}});
+$('pQ').addEventListener('click',e=>{
+  if(e.target.closest('[data-pcheck]'))pizzaCheck();
+  if(e.target.closest('[data-pfocus]')){const inp=$('cin'+pCur);if(inp){inp.scrollIntoView({behavior:'smooth',block:'center'});inp.focus({preventScroll:true})}}
+  if(e.target.closest('[data-prun]'))runPizza('full');
+  if(e.target.closest('[data-preset]')){pAns=[null,null,null];pCur=0;pMsg='';pTip='';drawPizza(false)}});
+function runPizza(upto){
+  wiring.port1='right';$('wiring').value='right';
+  ta.value=pizzaCode(upto);ta.scrollTop=0;ta.scrollLeft=0;paint();stopAll();if(!compile())return;
+  ctrl.ax=[0,0,0,0,0];showAxes();for(const b of Object.keys(btnEls))setBtn(b,false);
+  resetWorld(SCENES.pizza);start();storyRun=true;storyFull=upto==='full';storyKind='pizza';startTurbo(true);
+  document.querySelector('.views').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function pizzaDone(){
+  if(!storyFull){setN('Pizza delivery','','The robot is at the desk!','It drove for the time you typed, then stopped. Now go back up and type the last line to drop the pizza.',[],'');return}
+  const c=W.cube,ok=c&&!c.held&&inZone(c.x,c.y);
+  pMsg=ok?'★ Pizza delivered! You typed real robot code all by yourself.':'Hmm, the pizza did not land on the desk. Press Run it again and watch.';
+  setN('Pizza delivery','',ok?'★ Pizza delivered!':'Not on the desk yet',ok?'The robot drove to the desk, lowered the arm and opened the claw. That was your code!':'Watch the field closely and try again.',[],'');
+  if(pCur>=P.length)drawPizzaQ(false);
+}
+document.querySelector('.stabs').addEventListener('click',e=>{const t=e.target.closest('[data-tab]');if(!t)return;
+  document.querySelectorAll('.stab').forEach(b=>{const on=b===t;b.classList.toggle('act',on);b.setAttribute('aria-selected',on)});
+  $('storyA').hidden=t.dataset.tab!=='A';$('storyB').hidden=t.dataset.tab!=='B';});
+drawPizza(false);
 
 /* ================= Word cards ================= */
 const WORDS=[
