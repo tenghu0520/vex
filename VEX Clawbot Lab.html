@@ -1,0 +1,1410 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Clawbot Controller Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Lexend:wght@400;600;800&display=swap">
+<style>
+/* Layout: a driver's workbench — editable code left; controller, field and arm view right; narration below */
+:root{
+  --bg:#edf2f6; --surface:#ffffff; --ink:#15202b; --muted:#566473; --line:#d3dde6;
+  --accent:#d23b2f; --true:#0f8a66; --false:#b86e00; --hl:#ffd84d; --bad:#c62828;
+  --code-bg:#17202b; --code-ink:#dfe7ef; --code-dim:#66778a; --code-now:#2b3a4a; --code-err:#5a1f24;
+  --tile1:#d9dfe5; --tile2:#cfd6dd; --fieldline:#b4bec8; --robot:#8d99a6; --robot-dark:#4f5b67; --wheel:#2a2f35;
+  --cube:#e3a90c; --claw:#d6336c; --ctrl:#232a31; --ctrl-ink:#e6edf3; --screen:#05070a;
+  --sk:#7fc8ff; --ss:#ffc66d; --sf:#9be38a; --sn:#f0a3ff; --sc:#7d8d9c; --sp:#ff9e7a;
+  --f-body:"Lexend",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-code:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f151b; --surface:#17212b; --ink:#e6edf3; --muted:#9aaab9; --line:#2a3744;
+  --accent:#ff6257; --true:#3fd3a2; --false:#f2a93b; --bad:#ff7b72; --code-bg:#0b1117; --code-now:#1f2d3b; --code-err:#4a1a1e;
+  --tile1:#26313c; --tile2:#212b35; --fieldline:#3a4856; --robot:#7a8693; --robot-dark:#4a5561; --wheel:#0a0d10; --cube:#d9a21a; --claw:#ff6b9a; --ctrl:#0b1117; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f151b; --surface:#17212b; --ink:#e6edf3; --muted:#9aaab9; --line:#2a3744;
+  --accent:#ff6257; --true:#3fd3a2; --false:#f2a93b; --bad:#ff7b72; --code-bg:#0b1117; --code-now:#1f2d3b; --code-err:#4a1a1e;
+  --tile1:#26313c; --tile2:#212b35; --fieldline:#3a4856; --robot:#7a8693; --robot-dark:#4a5561; --wheel:#0a0d10; --cube:#d9a21a; --claw:#ff6b9a; --ctrl:#0b1117; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.65;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 64px}
+.wrap{max-width:1220px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:clamp(28px,5vw,44px);font-weight:800}
+h2{font-size:clamp(22px,3.4vw,30px);font-weight:800}
+h3{font-size:18px;font-weight:600}
+p{margin:0}
+code,.mono,kbd{font-family:var(--f-code)}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.lead{color:var(--muted);max-width:66ch}
+header{display:flex;flex-direction:column;gap:12px}
+.rule{display:inline-flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.rule span{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:14px}
+.rule b{color:var(--accent)}
+section{display:flex;flex-direction:column;gap:18px}
+.sec-head{display:flex;flex-direction:column;gap:6px}
+
+.lab{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.lab{grid-template-columns:minmax(0,1fr)}}
+.codecol{display:flex;flex-direction:column;gap:10px;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+select{font:inherit;font-size:14px;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+.editor{background:var(--code-bg);color:var(--code-ink);border-radius:14px;display:flex;font-family:var(--f-code);font-size:14.5px;line-height:26px;overflow:hidden;min-width:0;height:min(560px,66vh)}
+@media (max-width:900px){.editor{font-size:16px;height:460px}}
+.gutter{flex:none;overflow:hidden;user-select:none;border-right:1px solid #ffffff12}
+#gutterIn{padding:12px 0 28px}
+.g{height:26px;display:flex;align-items:center;cursor:pointer;color:var(--code-dim);font-size:12.5px}
+.g .num{width:36px;text-align:right}
+.g .ptr{width:22px;text-align:center;color:var(--hl);font-weight:700;opacity:0}
+.g.now .ptr{opacity:1;animation:nudge .7s ease-in-out infinite alternate}
+.g.now .num{color:var(--hl)}
+.g.err .num{color:#ff9a9a}
+.g:hover .num{color:var(--code-ink)}
+@keyframes nudge{from{transform:translateX(-3px)}to{transform:translateX(2px)}}
+.edwrap{position:relative;flex:1;min-width:0;overflow:hidden}
+.layer{margin:0;padding:12px 14px 28px;white-space:pre;font:inherit;tab-size:4;min-width:max-content;will-change:transform}
+.hl-ln{height:26px;padding-right:14px;transition:background .2s,opacity .2s;border-radius:4px;margin:0 -8px;padding-left:8px}
+.hl-ln.now{background:var(--code-now)}
+.hl-ln.skip{opacity:.32}
+.hl-ln.hot{background:#3fd3a226}
+.hl-ln.err{background:var(--code-err)}
+.hl-ln.peek{outline:2px dashed #ffd84d88;outline-offset:-2px}
+textarea#src{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:12px 14px 28px;border:0;resize:none;background:transparent;
+  color:transparent;caret-color:#fff;font:inherit;line-height:26px;white-space:pre;tab-size:4;overflow:auto;outline:none}
+textarea#src::selection{background:#7fc8ff55}
+.editor:focus-within{box-shadow:0 0 0 3px var(--hl)}
+.k{color:var(--sk);font-weight:700}.s{color:var(--ss)}.f{color:var(--sf)}.n{color:var(--sn)}.c{color:var(--sc);font-style:italic}.p{color:var(--sp)}
+
+.stage{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.box-title{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+/* controller */
+.ctrl{background:var(--ctrl);color:var(--ctrl-ink);border-radius:26px 26px 40px 40px;padding:10px 14px 14px;display:flex;flex-direction:column;gap:8px}
+.shoulders{display:flex;justify-content:space-between;gap:8px}
+.shoulders div{display:flex;gap:6px}
+.cbtn{font:600 13px var(--f-body);background:#3a444f;color:#fff;border:0;border-radius:8px;padding:5px 10px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;transition:background .15s,transform .1s}
+.cbtn kbd{font-size:10px;opacity:.6;background:#0003;border-radius:4px;padding:0 4px}
+.cbtn[aria-pressed="true"]{background:var(--accent);transform:translateY(2px)}
+.cbtn.reading{box-shadow:0 0 0 3px var(--hl)}
+.cbody{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center}
+.stick{display:flex;flex-direction:column;align-items:center;gap:4px}
+.pad{width:min(120px,26vw);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#2f3842 0 60%,#1a2027 61%);position:relative;touch-action:none;cursor:grab;border:2px solid #ffffff1a}
+.pad.reading{box-shadow:0 0 0 4px var(--hl)}
+.pad .knob{position:absolute;width:38%;aspect-ratio:1;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 30%,#7b8794,#3c4650);box-shadow:0 3px 6px #0008;pointer-events:none}
+.pad .cross{position:absolute;inset:0;pointer-events:none;background:linear-gradient(#ffffff14,#ffffff14) center/1px 80% no-repeat,linear-gradient(90deg,#ffffff14,#ffffff14) center/80% 1px no-repeat}
+.axv{font:12px var(--f-code);text-align:center;line-height:1.4;font-variant-numeric:tabular-nums}
+.axv b{display:inline-block;min-width:3.2ch;text-align:right;color:var(--hl)}
+.axv.dim{opacity:.55}
+.face{display:grid;grid-template-columns:repeat(3,30px);grid-template-rows:repeat(3,30px)}
+.face .cbtn{padding:0;width:30px;height:30px;border-radius:50%;justify-content:center}
+.ctrl-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:#aab4bf}
+.ctrl-foot button{font-size:12px;padding:3px 8px;background:#3a444f;color:#fff;border:0}
+.ctrl-foot label{display:flex;gap:6px;align-items:center}
+
+.views{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:12px}
+.views .wide{grid-column:1/-1}
+#claw{aspect-ratio:3/1}
+#clawState{text-transform:none;letter-spacing:0;font:700 12px var(--f-code);color:var(--claw)}
+.box-title .clawword{color:var(--claw)}
+@media (max-width:520px){.views{grid-template-columns:minmax(0,1fr)}}
+canvas{width:100%;display:block;border-radius:10px}
+#field{aspect-ratio:1}
+#side{aspect-ratio:8/5}
+.motors{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.mchip{border:1px solid var(--line);border-radius:10px;padding:6px 8px;display:flex;gap:8px;align-items:center;background:var(--bg);min-width:0}
+.mchip svg{flex:none;width:28px;height:28px}
+.mchip .mt{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.mchip .mn{font:700 13px var(--f-code);overflow:hidden;text-overflow:ellipsis}
+.mchip .ms{font-size:11.5px;color:var(--muted)}
+.mchip .mv{font:700 13px var(--f-code);font-variant-numeric:tabular-nums}
+.mchip.now{box-shadow:0 0 0 3px var(--hl)}
+.rowline{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+.brainbox{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.brainbox .v5{background:#1d2228;border-radius:8px;padding:5px;width:min(150px,100%)}
+
+.scr{container-type:inline-size;position:relative;width:100%;aspect-ratio:2/1;background:var(--screen);overflow:hidden;border-radius:3px}
+.scr .row{position:absolute;left:0;color:#fff;font-family:var(--f-code);white-space:pre;font-size:3.47cqw;line-height:1}
+.scr.blank .row{visibility:hidden}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 12px;display:inline-flex;gap:6px;align-items:center;font-variant-numeric:tabular-nums;background:var(--bg)}
+.chip .v{font-family:var(--f-code);font-weight:700}
+.t{color:var(--true)}.fz{color:var(--false)}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;font-size:15px;font-weight:600;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px;cursor:pointer;line-height:1.3}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible,.pad:focus-visible{outline:3px solid var(--hl);outline-offset:2px}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.on{background:var(--true);border-color:var(--true);color:#fff}
+button.small{font-size:13px;padding:5px 10px}
+.hint{font-size:13px;color:var(--muted)}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
+.toggle input{width:18px;height:18px;accent-color:var(--accent)}
+
+.narr{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.narr.error{border-color:var(--bad);box-shadow:inset 4px 0 0 var(--bad)}
+.narr.error h3{color:var(--bad)}
+.narr-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.badge{font-size:13px;font-weight:600;background:var(--hl);color:#15202b;border-radius:6px;padding:1px 10px}
+.badge.peekb{background:transparent;border:1.5px dashed var(--muted);color:var(--muted)}
+.badge.errb{background:var(--bad);color:#fff}
+.narr-code{font-family:var(--f-code);font-size:14px;background:var(--code-bg);color:var(--code-ink);padding:3px 10px;border-radius:6px;overflow-x:auto;max-width:100%;white-space:pre}
+.narr h3{font-size:22px;font-weight:800}
+.narr .txt{max-width:74ch;font-size:17px}
+.narr .txt code{background:var(--bg);padding:0 5px;border-radius:4px;font-size:15px}
+.dict{display:flex;flex-wrap:wrap;gap:8px}
+.dict span{font-size:13.5px;border-radius:8px;background:var(--bg);padding:2px 10px;border:1px solid var(--line)}
+.dict b{font-family:var(--f-code);margin-right:6px}
+.waitbar{height:10px;border-radius:5px;background:var(--bg);border:1px solid var(--line);overflow:hidden;max-width:360px}
+.waitbar i{display:block;height:100%;width:0;background:var(--true)}
+.waitbar.go i{animation:fill .8s linear forwards}
+@keyframes fill{to{width:100%}}
+.turbo{display:flex;gap:6px 18px;align-items:baseline;flex-wrap:wrap}
+.turbo .big{font-size:40px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
+
+.chal{background:var(--surface);border:2px solid var(--claw);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.chal-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.chal-head select{font-size:15px;font-weight:600}
+.chal-badge{font-size:13px;color:var(--muted)}
+.chal-body{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.chal-body{grid-template-columns:minmax(0,1fr)}}
+.chal-story{display:flex;flex-direction:column;gap:8px;min-width:0}
+.chal-story h3{font-size:22px;font-weight:800}
+.chal-story p{max-width:68ch}
+.chal-goal{font-weight:600;border-left:4px solid var(--claw);padding-left:10px}
+.chal-story code,.chal-hints code,.checks code{background:var(--bg);padding:0 5px;border-radius:4px;font-size:14px}
+.chal-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.checks li{display:grid;grid-template-columns:26px 1fr;gap:4px 8px;align-items:baseline;font-size:15px}
+.checks li .mk{font-weight:800;text-align:center;border-radius:50%;width:22px;height:22px;line-height:22px;font-size:13px;background:var(--bg);color:var(--muted)}
+.checks li.ok .mk{background:var(--true);color:#fff}
+.checks li.bad .mk{background:var(--false);color:#fff}
+.checks li .det{grid-column:2;font-size:13px;color:var(--muted)}
+.chal-msg{border-radius:10px;padding:10px 14px;font-weight:600;background:color-mix(in srgb,var(--true) 14%,var(--surface));border:1.5px solid var(--true)}
+.chal-msg.warn{background:color-mix(in srgb,var(--false) 12%,var(--surface));border-color:var(--false)}
+.chal-msg .big{font-size:20px;font-weight:800;display:block}
+.chal-hints{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.chal-hints:empty{display:none}
+.chal-sol{display:flex;flex-direction:column;gap:8px}
+.chal-sol .preview{max-height:320px;overflow:auto}
+.missions{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.missions ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+.missions li{max-width:78ch}
+.missions code,.lead code,.note code{background:var(--bg);padding:0 5px;border-radius:4px;font-size:14px}
+.note{font-size:14px;color:var(--muted);border-left:3px solid var(--hl);padding-left:10px}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.card .w{font-family:var(--f-code);font-weight:700;font-size:15px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card .w span{min-width:0;overflow-wrap:anywhere}
+.card .w button{font-size:12px;padding:2px 8px;border-radius:6px;font-family:var(--f-body);flex:none}
+.card .m{font-weight:600}
+.card .eg{color:var(--muted);font-size:14.5px}
+
+.quiz{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.q .qt{font-weight:600}
+.qgroup{display:flex;flex-direction:column;gap:12px}
+.qgroup h3{font-size:20px}
+.qgroup .lead{font-size:15px}
+.tryit{align-self:flex-start;font-size:13px;padding:5px 12px;border-color:var(--true);color:var(--true)}
+.scen{font-size:14px;color:var(--muted);font-family:var(--f-code)}
+.q .qt code{background:var(--bg);padding:0 6px;border-radius:4px}
+.opt{text-align:left;font-weight:400;padding:8px 12px}
+.opt.right{border-color:var(--true);background:color-mix(in srgb,var(--true) 12%,var(--surface))}
+.opt.wrong{border-color:var(--false);background:color-mix(in srgb,var(--false) 12%,var(--surface))}
+.fb{font-size:14.5px;min-height:1.5em}
+.score{font-size:18px;font-weight:800}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">VEX V5 · C++ coding lab · Clawbot</div>
+  <h1>Drive a robot with code, one line at a time</h1>
+  <p class="lead">This program turns the controller into a robot driver. The two sticks drive the wheels. The R1 and R2 buttons move the arm and the claw. Push a stick or press a button on the controller, then press <b>Next step</b> to see how each line reads it. Press <b>Real speed</b> to drive for real!</p>
+  <div class="rule"><span>Rule 1: read <b>top to bottom</b></span><span>Rule 2: do <b>one line at a time</b></span><span>Rule 3: a motor keeps spinning <b>until the code changes it</b></span></div>
+</header>
+
+<section id="lab">
+  <div class="sec-head">
+    <div class="eyebrow">Lab 1 · You are the driver and the programmer</div>
+    <h2>Sticks → wheels, buttons → arm and claw</h2>
+    <p class="lead">The yellow arrow ▶ shows the line the robot is reading. The code is yours: click inside it and type. With <b>Run as I type</b> on, the robot restarts with your new code. Click a line number to learn what that line means.</p>
+  </div>
+  <div class="chal" id="chal">
+    <div class="chal-head">
+      <label for="chSel" class="eyebrow">Challenge</label>
+      <select id="chSel"></select>
+      <span class="chal-badge" id="chBadge"></span>
+    </div>
+    <div class="chal-body">
+      <div class="chal-story"><h3 id="chTitle"></h3><p id="chStory"></p><p class="chal-goal" id="chGoal"></p></div>
+      <div class="chal-side" id="chSide">
+        <ul class="checks" id="chChecks"></ul>
+        <div class="controls"><button class="primary" id="chGo"></button><button id="chHint">Get a hint</button><button id="chSol">Show a solution</button></div>
+        <div class="chal-msg" id="chMsg" hidden></div>
+        <ol class="chal-hints" id="chHints"></ol>
+        <div class="chal-sol" id="chSolBox" hidden><div class="preview" id="chSolCode"></div><button class="small" id="chUseSol">Put this code in the editor</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="lab">
+    <div class="codecol">
+      <div class="toolbar">
+        <label class="hint" for="examples">Example</label>
+        <select id="examples">
+          <option value="class">Class program</option>
+          <option value="fixed">Claw on L1 / L2</option>
+          <option value="show">Show stick numbers (%d)</option>
+          <option value="arcade">One-stick driving</option>
+        </select>
+        <button class="small" id="resetCode">Undo my changes</button>
+        <label class="toggle"><input type="checkbox" id="live" checked> Run as I type</label>
+      </div>
+      <div class="editor" id="editor">
+        <div class="gutter" aria-label="Line numbers. Click one to learn about that line."><div id="gutterIn"></div></div>
+        <div class="edwrap">
+          <pre class="layer" id="layer" aria-hidden="true"></pre>
+          <textarea id="src" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="Code editor"></textarea>
+        </div>
+      </div>
+    <div class="narr" id="narr" aria-live="polite">
+        <div class="narr-top"><span class="badge" id="nBadge">Not started</span><span class="narr-code" id="nCode"></span></div>
+        <h3 id="nTitle">Ready?</h3>
+        <p class="txt" id="nText"></p>
+        <div class="waitbar" id="waitbar" hidden><i></i></div>
+        <div class="dict" id="nDict"></div>
+        <div class="turbo" id="turbo" hidden>
+          <span class="big"><span id="turboN">0</span> rounds</span>
+          <span class="hint">Real speed: about 50 rounds every second. Every round reads the sticks again, so the robot answers right away. Drive it!</span>
+        </div>
+        <div class="controls">
+          <button id="backBtn">◀ Back</button>
+          <button class="primary" id="nextBtn">Next step ▶</button>
+          <button id="playBtn">Auto play</button>
+          <select id="speed" aria-label="Auto play speed"><option value="1600">Slow</option><option value="900" selected>Medium</option><option value="350">Fast</option></select>
+          <button id="turboBtn">Real speed</button>
+          <button id="resetBtn">Restart</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="ctrl" id="ctrl" aria-label="Controller1">
+        <div class="shoulders">
+          <div><button class="cbtn" data-btn="L1" aria-pressed="false">L1 <kbd>Q</kbd></button><button class="cbtn" data-btn="L2" aria-pressed="false">L2 <kbd>Z</kbd></button></div>
+          <div><button class="cbtn" data-btn="R1" aria-pressed="false">R1 <kbd>E</kbd></button><button class="cbtn" data-btn="R2" aria-pressed="false">R2 <kbd>C</kbd></button></div>
+        </div>
+        <div class="cbody">
+          <div class="stick">
+            <div class="pad" id="padL" tabindex="0" aria-label="Left stick. Keys W A S D."><div class="cross"></div><div class="knob"></div></div>
+            <div class="axv"><span id="ax3l">Axis3 ↕ <b id="ax3">0</b></span><br><span id="ax4l" class="dim">Axis4 ↔ <b id="ax4">0</b></span></div>
+            <span class="hint" style="color:#aab4bf">keys W A S D</span>
+          </div>
+          <div class="face">
+            <span></span><button class="cbtn" data-btn="X" aria-pressed="false">X</button><span></span>
+            <button class="cbtn" data-btn="Y" aria-pressed="false">Y</button><span></span><button class="cbtn" data-btn="A" aria-pressed="false">A</button>
+            <span></span><button class="cbtn" data-btn="B" aria-pressed="false">B</button><span></span>
+          </div>
+          <div class="stick">
+            <div class="pad" id="padR" tabindex="0" aria-label="Right stick. Arrow keys."><div class="cross"></div><div class="knob"></div></div>
+            <div class="axv"><span id="ax2l">Axis2 ↕ <b id="ax2">0</b></span><br><span id="ax1l" class="dim">Axis1 ↔ <b id="ax1">0</b></span></div>
+            <span class="hint" style="color:#aab4bf">arrow keys</span>
+          </div>
+        </div>
+        <div class="ctrl-foot">
+          <span>Drag a stick. It stays where you leave it, so you can step through the code.</span>
+          <span style="display:flex;gap:10px;align-items:center"><label><input type="checkbox" id="spring"> Spring back</label><button id="center">Center sticks</button></span>
+        </div>
+      </div>
+
+      <div class="views">
+        <div class="card-box"><div class="box-title"><span>Field (from above)</span></div><canvas id="field" aria-label="Field seen from above, showing the robot and its wheels"></canvas></div>
+        <div class="card-box"><div class="box-title"><span>Arm and claw (from the side)</span></div><canvas id="side" aria-label="Side view of the arm and claw with a cube"></canvas></div>
+        <div class="card-box wide"><div class="box-title"><span><span class="clawword">Claw</span> close-up (from above)</span><span id="clawState">claw motor: stopped</span></div><canvas id="claw" aria-label="Close-up of the claw fingers opening and closing"></canvas></div>
+      </div>
+      <div class="card-box">
+        <div class="box-title"><span>Motors</span><span id="roundChip">while loop: round 0</span></div>
+        <div class="motors" id="motors"></div>
+        <div class="rowline">
+          <label for="wiring">On this robot, port 1 drives the</label>
+          <select id="wiring"><option value="right">right wheel</option><option value="left">left wheel</option></select>
+          <span>and port 10 drives the other wheel. Port 8 is the arm. Port 3 is the claw.</span>
+        </div>
+        <div class="brainbox"><div class="v5"><div class="scr" id="simScreen" aria-label="Brain screen"></div></div>
+          <span class="hint">Brain screen</span><button class="small" id="resetRobot">Put robot back</button></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="missions">
+    <h3>Missions: change the code and watch the robot</h3>
+    <ol>
+      <li>Push only the <b>left</b> stick up. Which wheel turns? Now push only the <b>right</b> stick. Find the two lines that connect <code>Axis2</code> to <code>Motor1</code> and <code>Axis3</code> to <code>Motor10</code>.</li>
+      <li>Press <b>R1</b>. Watch the arm and the claw. What moves? Look at both <code>if</code> parts. Is this what a driver wants? Fix it: in the second <code>if</code>, change <code>ButtonR1</code> to <code>ButtonL1</code> and <code>ButtonR2</code> to <code>ButtonL2</code>.</li>
+      <li>Pick up the cube! Lower the arm all the way, close the claw, then lift the arm.</li>
+      <li>Make the arm slower: change <code>80</code> to <code>30</code> in <code>arm.spin(forward, 80, percent)</code>.</li>
+      <li>Put <code>//</code> in front of <code>arm.stop();</code>. Press R1, then let go. What happens now? Why do we need <code>stop()</code>?</li>
+      <li>Change <code>true</code> to <code>false</code> in <code>motor arm(PORT8, ratio18_1, true);</code>. Press R1 again. What changed?</li>
+      <li>Show the right stick on the Brain screen. Add this line inside the loop: <code>Brain.Screen.printAt(1, 40, "Right = %d   ", controller1);</code></li>
+      <li>Big and small letters matter! <code>controller1</code> (a number box) and <code>Controller1</code> (the controller) are different names. Rename the box <code>controller1</code> to <code>rightStick</code>. You need to change it in two places. What happens if you change only one?</li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">Word cards</div>
+    <h2>Robot words, one job each</h2>
+    <p class="lead">Press <b>Say it</b> to hear the word.</p>
+  </div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <div class="eyebrow">Practice questions</div>
+    <h2>Read it, predict it, fix it</h2>
+    <p class="lead">These questions are about the class program in Lab 1. Questions with a <b>Try it</b> button set up the controller for you and run the robot at real speed, so you can check your answer with your own eyes.</p>
+    <div class="controls"><p class="score" id="score"></p><button class="small" id="quizReset">Start over</button></div>
+  </div>
+  <div id="quiz" style="display:flex;flex-direction:column;gap:28px"></div>
+</section>
+</div>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ================= Examples ================= */
+const DEV=`#include "vex.h"
+using namespace vex;
+// A global instance of vex::brain used for printing to the V5 brain screen
+///
+vex::brain         Brain;
+vex::controller     Controller1;
+motor Motor1 = motor(PORT1);
+motor Motor10 = motor(PORT10);
+motor arm(PORT8, ratio18_1, true);
+motor claw(PORT3, ratio18_1, false);
+;
+
+int main(){
+   while(true){
+
+   int controller1 = Controller1.Axis2.position();
+   Motor1.setVelocity(controller1,percent);
+   Motor1.spin(forward);
+   wait(10,msec);
+   int controller2 = Controller1.Axis3.position();
+   Motor10.setVelocity(controller2,percent);
+   wait(10,msec);
+
+   Motor10.spin(forward);
+`;
+const ARM=`   if (Controller1.ButtonR1.pressing() ){
+       arm.spin(forward, 80, percent );
+   }
+   else if(Controller1.ButtonR2.pressing()){
+       arm.spin(reverse, 80, percent);
+   }
+   else{
+       arm.stop();
+   }
+`;
+const EX={
+class:DEV+ARM+`   if (Controller1.ButtonR1.pressing()){
+       claw.spin(forward, 80, percent );
+   }
+   else if(Controller1.ButtonR2.pressing()){
+       claw.spin(reverse, 80, percent);
+   }
+   else{
+       claw.stop();
+   }
+   }
+}`,
+fixed:DEV+ARM+`   if (Controller1.ButtonL1.pressing()){
+       claw.spin(forward, 80, percent );
+   }
+   else if(Controller1.ButtonL2.pressing()){
+       claw.spin(reverse, 80, percent);
+   }
+   else{
+       claw.stop();
+   }
+   }
+}`,
+show:`#include "vex.h"
+using namespace vex;
+
+vex::brain         Brain;
+vex::controller     Controller1;
+motor Motor1 = motor(PORT1);
+motor Motor10 = motor(PORT10);
+
+int main(){
+   while(true){
+   int rightStick = Controller1.Axis2.position();
+   int leftStick = Controller1.Axis3.position();
+   Brain.Screen.printAt(1, 20, "Right = %d   ", rightStick);
+   Brain.Screen.printAt(1, 40, "Left  = %d   ", leftStick);
+   Motor1.spin(forward, rightStick, percent);
+   Motor10.spin(forward, leftStick, percent);
+   wait(20, msec);
+   }
+}`,
+arcade:`#include "vex.h"
+using namespace vex;
+
+vex::brain         Brain;
+vex::controller     Controller1;
+motor Motor1 = motor(PORT1);
+motor Motor10 = motor(PORT10);
+
+int main(){
+   while(true){
+   // left stick up-down: go forward or back
+   int drive = Controller1.Axis3.position();
+   // left stick left-right: turn
+   int turn = Controller1.Axis4.position();
+   Motor10.spin(forward, drive + turn, percent);
+   Motor1.spin(forward, drive - turn, percent);
+   wait(20, msec);
+   }
+}`};
+
+/* ================= Highlighter ================= */
+function hl(s){
+  return esc(s).replace(/("[^"]*"?)|(\/\/.*)|(#include)|\b(int|while|true|false|if|else|using|namespace|bool|return|float|double|motor|brain|controller|vex)\b|\b(msec|seconds|sec|percent|pct|rpm|forward|reverse|fwd|rev|brake|coast|hold|primary|PORT\d+|ratio(?:6|18|36)_1|red|green|blue|yellow|orange|purple|white|cyan)\b|\b(\d+)\b|([A-Za-z_]\w*)(?=\s*\()/g,
+   (m,str,com,pre,kw,cst,num,fn)=>str?`<span class="s">${str}</span>`:com?`<span class="c">${com}</span>`:pre?`<span class="p">${pre}</span>`:kw?`<span class="k">${kw}</span>`:cst?`<span class="n">${cst}</span>`:num?`<span class="n">${num}</span>`:`<span class="f">${fn}</span>`);
+}
+
+/* ================= Brain screen ================= */
+const COLORS={white:'#ffffff',red:'#ff5252',green:'#3ddc84',blue:'#5aa9ff',yellow:'#ffd84d',orange:'#ff9f43',purple:'#c39bff',cyan:'#4dd9e8'};
+function Screen(el){
+  const rows=new Map();let lastY=null,ft=null;const S={pen:'white'};
+  function render(){el.querySelectorAll('.row').forEach(n=>n.remove());
+    for(const [y,arr] of rows){const d=document.createElement('div');d.className='row';d.style.top=((y-16)/480*100)+'cqw';
+      let html='',cur=null,buf='';for(const c of arr){if(c.k!==cur){if(buf)html+=`<span style="color:${COLORS[cur]}">${esc(buf)}</span>`;buf='';cur=c.k}buf+=c.c}
+      if(buf)html+=`<span style="color:${COLORS[cur]}">${esc(buf)}</span>`;d.innerHTML=html;el.appendChild(d)}}
+  const blank=()=>Array.from({length:48},()=>({c:' ',k:'white'}));
+  S.print=(x,y,t)=>{const col=Math.max(0,Math.floor(x/10));const arr=rows.get(y)||blank();for(let i=0;i<t.length&&col+i<48;i++)arr[col+i]={c:t[i]==='\n'?' ':t[i],k:S.pen};rows.set(y,arr);lastY=y;render()};
+  S.clear=()=>{const had=rows.size>0;rows.clear();render();if(had){el.classList.add('blank');clearTimeout(ft);ft=setTimeout(()=>el.classList.remove('blank'),30)}};
+  S.clearLine=r=>{if(r!=null){for(const y of [...rows.keys()])if(y>(r-1)*20&&y<=r*20)rows.delete(y)}else if(lastY!=null)rows.delete(lastY);render()};
+  S.reset=()=>{rows.clear();S.pen='white';lastY=null;render()};
+  return S;
+}
+
+/* ================= Lexer ================= */
+function lex(src){
+  const T=[];let i=0,line=1;const n=src.length;const err=(l,m)=>{throw{line:l,msg:m}};
+  while(i<n){const c=src[i];
+    if(c==='\n'){line++;i++;continue}
+    if(/\s/.test(c)){i++;continue}
+    if(c==='/'&&src[i+1]==='/'){while(i<n&&src[i]!=='\n')i++;continue}
+    if(c==='/'&&src[i+1]==='*'){const l0=line;i+=2;while(i<n&&!(src[i]==='*'&&src[i+1]==='/')){if(src[i]==='\n')line++;i++}if(i>=n)err(l0,'This comment /* never ends. Add */ to close it.');i+=2;continue}
+    if(c==='#'){const s=i;while(i<n&&src[i]!=='\n')i++;T.push({t:'pre',v:src.slice(s,i).trim(),line,s,e:i});continue}
+    if(c==='"'){const s=i;i++;let v='';while(i<n&&src[i]!=='"'&&src[i]!=='\n'){if(src[i]==='\\'&&i+1<n){const d=src[i+1];v+=d==='n'?'\n':d;i+=2;continue}v+=src[i++]}
+      if(src[i]!=='"')err(line,'This text needs a closing quote ". Text always goes between two quotes, like "Hi".');i++;T.push({t:'str',v,line,s,e:i});continue}
+    if(/[0-9]/.test(c)){const s=i;while(i<n&&/[0-9.]/.test(src[i]))i++;T.push({t:'num',v:parseFloat(src.slice(s,i)),line,s,e:i});continue}
+    if(/[A-Za-z_]/.test(c)){const s=i;while(i<n&&/\w/.test(src[i]))i++;T.push({t:'id',v:src.slice(s,i),line,s,e:i});continue}
+    const two=src.substr(i,2);
+    if(['==','!=','<=','>=','&&','||','++','--','+=','-=','::'].includes(two)){T.push({t:'op',v:two,line,s:i,e:i+2});i+=2;continue}
+    if('(){};,.!<>=+-*/%'.includes(c)){T.push({t:'op',v:c,line,s:i,e:i+1});i++;continue}
+    err(line,`I don't know this symbol: ${esc(c)}`);
+  }
+  T.push({t:'eof',v:'',line,s:n,e:n});return T;
+}
+
+/* ================= Parser ================= */
+function lev(a,b){a=a.toLowerCase();b=b.toLowerCase();const d=Array.from({length:a.length+1},(_,i)=>[i]);for(let j=1;j<=b.length;j++)d[0][j]=j;
+  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
+function sugFrom(name,list){let best=null,bd=99;for(const k of list){const d=lev(name,k);if(d<bd){bd=d;best=k}}
+  return best&&bd<=Math.max(2,Math.floor(best.length/4))?` Did you mean <code>${esc(best)}</code>?`:' Check the spelling. Big and small letters matter!'}
+const SPECIAL=['msec','seconds','sec','percent','pct','rpm','forward','reverse','fwd','rev','brake','coast','hold','primary'];
+const UNSUP=['spinFor','spinToPosition','spinTo','setPosition','resetPosition','rotation','torque','current','temperature','isDone','setTimeout','setMaxTorque','position'];
+const BTNS=['L1','L2','R1','R2','A','B','X','Y','Up','Down','Left','Right'];
+
+function parse(src){
+  const T=lex(src);let p=0;
+  const pk=(o=0)=>T[Math.min(p+o,T.length-1)],nx=()=>T[p++];
+  const is=(v,o=0)=>{const t=pk(o);return t.t!=='str'&&t.t!=='eof'&&t.v===v};
+  const err=(l,m)=>{throw{line:l,msg:m}};
+  const prevLine=()=>T[Math.max(0,p-1)].line;
+  function expect(v,msg){if(is(v))return nx();
+    if(v===';')err(prevLine(),'Missing <code>;</code> at the end of this line. Every command ends with a semicolon ;');
+    err(pk().t==='eof'?prevLine():pk().line,msg||`I expected <code>${esc(v)}</code> here.`)}
+  var mulE=bin(un,['*','/','%']),addE=bin(mulE,['+','-']),relE=bin(addE,['<','>','<=','>=']),eqE=bin(relE,['==','!=']),andE=bin(eqE,['&&']),orE=bin(andE,['||']);
+  const devices=new Map();
+  function known(){const k=['vexcodeInit','wait','Brain.Screen.printAt','Brain.Screen.clearScreen','Brain.Screen.clearLine','Brain.Screen.setPenColor','while','if','else','int','bool','return'];
+    for(const [n,d] of devices){if(d.type==='motor')k.push(n+'.spin',n+'.stop',n+'.setVelocity',n+'.velocity',n);
+      if(d.type==='controller'){k.push(n);for(let a=1;a<=4;a++)k.push(`${n}.Axis${a}.position`);BTNS.forEach(b=>k.push(`${n}.Button${b}.pressing`))}}
+    return k}
+  const sug=n=>sugFrom(n,known());
+  const top=[];let main=null;
+  while(pk().t!=='eof'){const t=pk();
+    if(t.t==='pre'){nx();if(!/^#include\s*[<"].+[>"]$/.test(t.v))err(t.line,'This #include line looks wrong. Try: <code>#include "vex.h"</code>');top.push({k:'include',line:t.line});continue}
+    if(is('using')){nx();expect('namespace','Try: <code>using namespace vex;</code>');const id=nx();if(id.v!=='vex')err(id.line,'Try: <code>using namespace vex;</code>');expect(';');top.push({k:'using',line:t.line});continue}
+    if(is(';')){nx();top.push({k:'emptyTop',line:t.line});continue}
+    if(is('int')&&is('main',1)){nx();nx();expect('(','main needs ( ) like this: <code>int main() {</code>');expect(')','main needs ( ) like this: <code>int main() {</code>');const b=block();main={k:'main',line:t.line,body:b.body,end:b.end};continue}
+    let pref=false;if(is('vex')&&is('::',1)){nx();nx();pref=true}
+    const ty=pk();
+    if(ty.t==='id'&&['brain','controller','motor'].includes(ty.v)){nx();top.push(deviceDecl(ty.v,pref,t.line));continue}
+    if(ty.t==='id'&&['int','bool','float','double'].includes(ty.v)){top.push(stmt());continue}
+    if(main)err(t.line,`I didn't expect <code>${esc(t.v)}</code> after main ended. Is there an extra <code>}</code> above?`);
+    err(t.line,`I didn't expect <code>${esc(t.v)}</code> here.${ty.t==='id'?sugFrom(ty.v,['motor','brain','controller','int','bool']):''}`);
+  }
+  if(!main)err(1,"I can't find <code>int main() { }</code>. Every program needs one!");
+  markSame(main.body,[]);
+  return{top,main,devices};
+
+  function deviceDecl(type,pref,line){
+    const id=nx();if(id.t!=='id')err(id.line,`Give your ${type} a name, like: <code>${type} myName;</code>`);
+    if(devices.has(id.v))err(id.line,`There is already a device named <code>${esc(id.v)}</code> on line ${devices.get(id.v).line}. Give this one a different name.`);
+    let args=null;
+    if(is('=')){nx();if(is('vex')&&is('::',1)){nx();nx()}const c=nx();if(c.v!==type)err(c.line,`After = you need <code>${type}(...)</code>.`);args=ctorArgs()}
+    else if(is('('))args=ctorArgs();
+    expect(';');
+    const d={k:'device',type,name:id.v,line,pref};
+    if(type==='motor'){
+      if(!args||!args.length)err(line,'A motor needs a port, like <code>motor(PORT1)</code>.');
+      const m=/^PORT(\d+)$/.exec(args[0].v);if(!m)err(args[0].line,'The first thing inside motor( ) is the port, like <code>PORT1</code>.');
+      d.port=+m[1];if(d.port<1||d.port>21)err(args[0].line,'The V5 Brain has ports 1 to 21.');
+      for(const a of args.slice(1)){if(/^ratio(6|18|36)_1$/.test(a.v))d.ratio=a.v;else if(a.v==='true'||a.v==='false')d.rev=a.v==='true';
+        else err(a.line,`I don't understand <code>${esc(a.v)}</code> here. After the port you can write a gear like <code>ratio18_1</code>, then <code>true</code> or <code>false</code>.`)}
+      for(const [n,o] of devices)if(o.type==='motor'&&o.port===d.port)err(line,`Port ${d.port} is already used by <code>${esc(n)}</code> on line ${o.line}. One port can only hold one motor.`);
+    }
+    if(type==='controller'&&args&&args.length&&!['primary','partner'].includes(args[0].v))err(line,'Use <code>controller(primary)</code>.');
+    if(type==='brain'&&args&&args.length)err(line,'brain does not need anything inside ( ).');
+    devices.set(d.name,d);return d;
+  }
+  function ctorArgs(){expect('(');const a=[];while(!is(')')){if(pk().t==='eof')err(prevLine(),'I expected a <code>)</code> here.');
+      if(is('vex')&&is('::',1)){nx();nx()}const t=nx();if(t.t!=='id')err(t.line,`I didn't expect <code>${esc(t.v)}</code> inside ( ).`);a.push(t);if(is(','))nx();else if(!is(')'))err(pk().line,'Put a comma between the parts.')}
+    nx();return a}
+  function block(){const o=expect('{','I expected a <code>{</code> to start this part.');const body=[];
+    while(!is('}')){if(pk().t==='eof')err(o.line,`The <code>{</code> on line ${o.line} is never closed. Add a <code>}</code> to close it.`);body.push(stmt())}
+    const c=nx();return{body,end:c.line}}
+  function condParen(kw){expect('(',`${kw} needs ( ) around the question, like <code>${kw} (true)</code>`);const s=pk();if(is(')'))err(s.line,`The ( ) after ${kw} is empty. Put a question inside!`);
+    const e=expr();const last=T[p-1];expect(')','I expected a <code>)</code> to close the question.');return{e,text:src.slice(s.s,last.e).trim()}}
+  function lastLine(s){return s.k==='if'?(s.els?s.elsEnd:s.thenEnd):s.k==='while'?s.end:s.line}
+  function markSame(body,seen){for(const s of body){
+    if(s.k==='if'){const key=s.text.replace(/\s+/g,'');const prev=seen.find(x=>x.key===key&&x.line!==s.line);if(prev)s.sameAs=prev.line;seen.push({key,line:s.line});
+      markSame(s.then,[]);if(s.els)markSame(s.els,seen)}
+    else if(s.k==='while')markSame(s.body,[])}}
+  function stmt(){
+    const t=pk();
+    if(t.t==='op'&&t.v===';'){nx();return{k:'empty',line:t.line}}
+    if(t.t==='op'&&t.v==='}')err(t.line,'This <code>}</code> has no <code>{</code> to close. Is there one too many?');
+    if(t.t!=='id')err(t.line,`I didn't expect <code>${esc(t.t==='str'?'"'+t.v+'"':t.v)}</code> here.`);
+    if(t.v==='while'){nx();const c=condParen('while');const b=block();return{k:'while',line:t.line,cond:c.e,text:c.text,body:b.body,end:b.end}}
+    if(t.v==='if'){nx();const c=condParen('if');const b=block();const s={k:'if',line:t.line,cond:c.e,text:c.text,then:b.body,thenEnd:b.end,els:null};
+      if(is('else')){const el=nx();s.elseLine=el.line;if(is('if')){const sub=stmt();sub.isElseIf=true;s.els=[sub];s.elsEnd=lastLine(sub);s.elseIf=true}else{const b2=block();s.els=b2.body;s.elsEnd=b2.end}}
+      return s}
+    if(t.v==='else')err(t.line,'This <code>else</code> has no <code>if</code> before it. else must come right after the <code>}</code> of an if.');
+    if(['bool','int','float','double'].includes(t.v)){nx();const id=nx();if(id.t!=='id')err(id.line,`Give your ${t.v} box a name, like: <code>${t.v} myBox = ...;</code>`);
+      if(devices.has(id.v))err(id.line,`<code>${esc(id.v)}</code> is already the name of a device. Pick another name for this box.`);
+      let e=null;if(is('=')){nx();e=expr()}expect(';');return{k:'decl',line:t.line,type:t.v,name:id.v,e}}
+    if(t.v==='return'){nx();if(!is(';'))expr();expect(';');return{k:'return',line:t.line}}
+    if(['motor','brain','controller'].includes(t.v))err(t.line,`Make devices like this ${t.v} at the top of the program, before <code>int main()</code>.`);
+    nx();let name=t.v;while(is('.')){nx();const id=nx();if(id.t!=='id')err(id.line,'After a dot <code>.</code> you need a name.');name+='.'+id.v}
+    if(is('(')){nx();const args=[];if(!is(')')){args.push(expr());while(is(',')){nx();args.push(expr())}}
+      expect(')','I expected a <code>)</code> to close this command.');expect(';');return checkCall({k:'call',line:t.line,name,args})}
+    if(name.includes('.'))err(t.line,`Did you forget the <code>( )</code> after <code>${esc(name)}</code>?`);
+    if(is('=')||is('+=')||is('-=')){const op=nx().v;const e=expr();expect(';');return{k:'assign',line:t.line,name,op,e}}
+    if(is('++')||is('--')){const op=nx().v;expect(';');return{k:'assign',line:t.line,name,op:op==='++'?'+=':'-=',e:{k:'num',v:1}}}
+    err(t.line,`I don't know what <code>${esc(name)}</code> means here.${sug(name)}`);
+  }
+  function isVar(a,list){return !!a&&a.k==="var"&&list.includes(a.name)}
+  function checkCall(s){const n=s.args.length,L=s.line;
+    switch(s.name){
+    case 'vexcodeInit':if(n)err(L,'vexcodeInit() does not need anything inside the ( ).');return s;
+    case 'wait':if(n!==2)err(L,'wait needs a number and a unit, like <code>wait(20, msec);</code>');
+      if(!isVar(s.args[1],['msec','seconds','sec']))err(L,'The second part of wait is the unit: <code>msec</code> or <code>seconds</code>.');s.unit=s.args[1].name==='msec'?'msec':'seconds';return s;
+    }
+    const parts=s.name.split('.');
+    if(parts[0]==='Brain'&&parts[1]==='Screen'&&parts.length===3){
+      if(!devices.has('Brain'))err(L,'Make the Brain first, at the top of the program: <code>vex::brain Brain;</code>');
+      switch(parts[2]){
+      case 'printAt':if(n<3)err(L,'printAt needs three things: x, y and the text. Like <code>printAt(1, 20, "Hi")</code>');return s;
+      case 'clearScreen':if(n)err(L,'clearScreen() does not need anything inside the ( ).');return s;
+      case 'clearLine':if(n>1)err(L,'clearLine takes one row number, or nothing.');return s;
+      case 'setPenColor':{const a=s.args[0];if(n!==1||a.k!=='var'||!COLORS[a.name])err(L,'Pick a color: <code>white, red, green, blue, yellow, orange, purple, cyan</code>.');s.color=a.name;return s}
+      }}
+    const dev=devices.get(parts[0]);
+    if(dev&&dev.type==='motor'&&parts.length===2){s.motor=dev.name;const m=parts[1];s.fn=m;
+      switch(m){
+      case 'setVelocity':if(n!==2||!isVar(s.args[1],['percent','pct','rpm']))err(L,`setVelocity needs a speed and a unit, like <code>${dev.name}.setVelocity(50, percent);</code>`);s.unit=s.args[1].name;return s;
+      case 'spin':if(!(n===1||n===3)||!isVar(s.args[0],['forward','reverse','fwd','rev']))err(L,`spin needs a direction: <code>${dev.name}.spin(forward);</code> or <code>${dev.name}.spin(forward, 50, percent);</code>`);
+        s.dir=['forward','fwd'].includes(s.args[0].name)?1:-1;if(n===3){if(!isVar(s.args[2],['percent','pct','rpm']))err(L,'The last part of spin is the unit, like <code>percent</code>.');s.unit=s.args[2].name}return s;
+      case 'stop':if(n>1||(n===1&&!isVar(s.args[0],['brake','coast','hold'])))err(L,`Use <code>${dev.name}.stop();</code> or <code>${dev.name}.stop(hold);</code>`);s.mode=n?s.args[0].name:null;return s;
+      case 'setStopping':if(n!==1||!isVar(s.args[0],['brake','coast','hold']))err(L,'setStopping needs <code>brake</code>, <code>coast</code> or <code>hold</code>.');s.mode=s.args[0].name;return s;
+      }
+      if(UNSUP.includes(m))err(L,`<code>${esc(m)}</code> is a real VEX command, but this practice robot doesn't know it yet. Here motors know <code>setVelocity</code>, <code>spin</code> and <code>stop</code>.`);
+      err(L,`Motors don't have a command called <code>${esc(m)}</code>.${sugFrom(m,['setVelocity','spin','stop','setStopping'])}`)}
+    if(dev&&dev.type==='controller')err(L,`A controller is for reading. Use it inside ( ) or after =, like <code>int x = ${dev.name}.Axis3.position();</code>`);
+    if(!dev&&parts.length>1&&parts[0]!=='Brain')err(L,`I don't know a device named <code>${esc(parts[0])}</code>.${sug(parts[0])} Devices are made at the top of the program.`);
+    err(L,`I don't know the command <code>${esc(s.name)}</code>.${sug(s.name)}`);
+  }
+  function expr(){return orE()}
+  function bin(next,ops){return()=>{let a=next();while(ops.some(o=>is(o))){const line=pk().line;const op=nx().v;a={k:'bin',op,a,b:next(),line}}return a}}
+  function un(){if(is('!')){nx();return{k:'not',a:un()}}if(is('-')){nx();return{k:'neg',a:un()}}return prim()}
+  function prim(){const t=nx();
+    if(t.t==='num')return{k:'num',v:t.v};
+    if(t.t==='str')return{k:'str',v:t.v};
+    if(t.t==='op'&&t.v==='('){const e=expr();expect(')','I expected a <code>)</code> here.');return e}
+    if(t.t==='id'){if(t.v==='true'||t.v==='false')return{k:'bool',v:t.v==='true'};
+      let name=t.v;while(is('.')){nx();const id=nx();if(id.t!=='id')err(id.line,'After a dot <code>.</code> you need a name.');name+='.'+id.v}
+      const parts=name.split('.'),dev=devices.get(parts[0]);
+      if(is('(')){nx();
+        if(dev&&dev.type==='controller'){
+          if(parts.length===3&&/^Axis[1-4]$/.test(parts[1])&&parts[2]==='position'){if(!is(')')){const u=nx();if(!['percent','pct'].includes(u.v))err(u.line,'Use <code>position()</code> or <code>position(percent)</code>.')}
+            expect(')','I expected a <code>)</code> here.');return{k:'axis',a:+parts[1][4],line:t.line}}
+          if(parts.length===3&&parts[1].startsWith('Button')&&BTNS.includes(parts[1].slice(6))&&parts[2]==='pressing'){expect(')','pressing needs empty ( ) like this: <code>pressing()</code>');return{k:'btn',b:parts[1].slice(6),line:t.line}}
+          err(t.line,`I don't know <code>${esc(name)}()</code>.${sug(name)}`)}
+        if(dev&&dev.type==='motor'&&parts.length===2&&parts[1]==='velocity'){if(!is(')'))nx();expect(')');return{k:'mvel',m:parts[0]}}
+        err(t.line,`I don't know <code>${esc(name)}()</code>.${sug(name)}`)}
+      if(dev)err(t.line,dev.type==='controller'?`What do you want to read from <code>${esc(name)}</code>? Try <code>${dev.name}.Axis3.position()</code>.`:`<code>${esc(name)}</code> is a device, not a number.`);
+      if(name.includes('.'))err(t.line,`Did you forget the <code>( )</code> after <code>${esc(name)}</code>?${sug(name)}`);
+      return{k:'var',name,line:t.line}}
+    if(t.t==='eof')err(prevLine(),'The program ended too early. Is something missing?');
+    if(t.t==='op'&&t.v===';')err(t.line,'Something is missing before this <code>;</code>');
+    err(t.line,`I didn't expect <code>${esc(t.v)}</code> here.`);
+  }
+}
+
+/* ================= Robot wiring ================= */
+const wiring={port1:'right'};
+function role(port){
+  if(port===1)return{r:'wheel',side:wiring.port1};
+  if(port===10)return{r:'wheel',side:wiring.port1==='right'?'left':'right'};
+  if(port===8)return{r:'arm'};if(port===3)return{r:'claw'};return{r:'none'};
+}
+const roleName=port=>{const r=role(port);return r.r==='wheel'?`the ${r.side} wheel`:r.r==='arm'?'the arm':r.r==='claw'?'the claw':'not connected to anything'};
+const out=m=>m.on?clamp(m.vel,-100,100)*m.dir:0;
+const phys=m=>m.rev?-out(m):out(m);
+function effectTxt(m){const r=role(m.port),ph=phys(m);
+  if(r.r==='wheel')return ph>0?`The ${r.side} wheel rolls forward.`:ph<0?`The ${r.side} wheel rolls backward.`:`The ${r.side} wheel stays still.`;
+  if(r.r==='arm')return ph<0?'The arm goes up.':ph>0?'The arm goes down.':'The arm holds still.';
+  if(r.r==='claw')return ph>0?'The claw closes.':ph<0?'The claw opens.':'The claw holds still.';
+  return `Nothing is plugged into port ${m.port} on this robot, so nothing moves.`}
+
+/* ================= Runner ================= */
+class Ret{}
+const conv=(type,v)=>type==='bool'?!!v:type==='int'?Math.trunc(Number(v)):Number(v);
+function format(f,args){return f.replace(/%(\.\d+)?([dfis%])/g,(m,pr,c)=>{if(c==='%')return'%';if(!args.length)return m;const a=args.shift();
+  if(c==='d'||c==='i')return String(Math.trunc(Number(a)));if(c==='f')return Number(a).toFixed(pr?+pr.slice(1):6);return String(a)})}
+const RPM={ratio36_1:100,ratio18_1:200,ratio6_1:600};
+function makeRun(prog,ctx){
+  const vars=new Map();
+  const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+  const num=(v,L,what)=>{if(typeof v!=='number'||isNaN(v))throw{line:L,msg:`${what} must be a number.`};return v};
+  function ev(e){switch(e.k){
+    case 'num':case 'str':case 'bool':return e.v;
+    case 'axis':{const v=ctx.read(()=>Math.round(ctx.ctl.ax[e.a]));ctx.reads.push({k:'axis',a:e.a,v});return v}
+    case 'btn':{const v=ctx.read(()=>!!ctx.ctl.btn[e.b]);ctx.reads.push({k:'btn',b:e.b,v});return v}
+    case 'mvel':return ctx.motors.get(e.m).vel;
+    case 'var':if(SPECIAL.includes(e.name)||COLORS[e.name]||/^PORT\d+$|^ratio/.test(e.name))throw{line:e.line,msg:`<code>${e.name}</code> can only be used inside a command's ( ), like <code>spin(forward)</code> or <code>wait(10, msec)</code>.`};
+      if(!vars.has(e.name)){const close=[...vars.keys()].find(k=>k.toLowerCase()===e.name.toLowerCase());
+        throw{line:e.line,msg:`What is <code>${esc(e.name)}</code>? Make the box first, like: <code>int ${esc(e.name)} = 0;</code>${close?` Did you mean <code>${esc(close)}</code>? Big and small letters matter!`:''}`}}
+      return vars.get(e.name).v;
+    case 'not':return !ev(e.a);
+    case 'neg':return -ev(e.a);
+    case 'bin':{if(e.op==='&&')return !!(ev(e.a)&&ev(e.b));if(e.op==='||')return !!(ev(e.a)||ev(e.b));const a=ev(e.a),b=ev(e.b);
+      switch(e.op){case '==':return a==b;case '!=':return a!=b;case '<':return a<b;case '>':return a>b;case '<=':return a<=b;case '>=':return a>=b;
+        case '+':return a+b;case '-':return a-b;case '*':return a*b;
+        case '/':if(b==0)throw{line:e.line,msg:"You can't divide by 0!"};return Number.isInteger(a)&&Number.isInteger(b)?Math.trunc(a/b):a/b;
+        case '%':return a%b}}
+  }}
+  const toPct=(v,unit,m)=>unit==='rpm'?v/(RPM[m.ratio||'ratio18_1'])*100:v;
+  function doCall(s){
+    if(s.motor){const m=ctx.motors.get(s.motor);
+      switch(s.fn){
+      case 'setVelocity':{const raw=num(ev(s.args[0]),s.line,'The speed');m.vel=clamp(toPct(raw,s.unit,m),-100,100);
+        return{fn:'setVel',m,raw,src:s.args[0].k==='var'?s.args[0].name:null}}
+      case 'spin':{m.dir=s.dir;let raw=null;if(s.args.length===3){raw=num(ev(s.args[1]),s.line,'The speed');m.vel=clamp(toPct(raw,s.unit,m),-100,100)}m.on=true;
+        return{fn:'spin',m,raw,effect:effectTxt(m)}}
+      case 'stop':m.on=false;if(s.mode)m.mode=s.mode;return{fn:'stop',m,effect:effectTxt(m)};
+      case 'setStopping':m.mode=s.mode;return{fn:'setStopping',m};
+      }}
+    switch(s.name){
+    case 'vexcodeInit':return{fn:'init'};
+    case 'wait':{const n=num(ev(s.args[0]),s.line,'The wait time');if(n<0)throw{line:s.line,msg:'wait needs a number that is 0 or more.'};return{fn:'wait',n,ms:s.unit==='msec'?n:n*1000}}
+    case 'Brain.Screen.printAt':{const x=ev(s.args[0]),y=ev(s.args[1]),f=ev(s.args[2]);
+      if(typeof x!=='number'||typeof y!=='number')throw{line:s.line,msg:'x and y must be numbers, like <code>printAt(1, 20, "Hi")</code>'};
+      if(typeof f!=='string')throw{line:s.line,msg:'The third part of printAt must be text in quotes. To show a number, write <code>"%d"</code> and then the number: <code>printAt(1, 20, "%d", speed)</code>'};
+      const vals=s.args.slice(3).map(ev);const txt=format(f,vals.slice());ctx.screen.print(x,y,txt);return{fn:'printAt',x,y,txt,fmt:f,vals,names:s.args.slice(3).map(a=>a.k==='var'?a.name:null)}}
+    case 'Brain.Screen.clearScreen':ctx.screen.clear();return{fn:'clearScreen'};
+    case 'Brain.Screen.clearLine':{const r=s.args.length?ev(s.args[0]):null;ctx.screen.clearLine(r);return{fn:'clearLine'}}
+    case 'Brain.Screen.setPenColor':ctx.screen.pen=s.color;return{fn:'pen'};
+    }}
+  function* blk(b){for(const s of b)yield* st(s)}
+  function* st(s){
+    ctx.reads=[];
+    switch(s.k){
+    case 'empty':return;
+    case 'decl':{let v=s.e?ev(s.e):(s.type==='bool'?false:0);v=conv(s.type,v);vars.set(s.name,{type:s.type,v});yield{kind:'decl',line:s.line,s,v,reads:ctx.reads};return}
+    case 'assign':{if(!vars.has(s.name))throw{line:s.line,msg:`What is <code>${esc(s.name)}</code>? Make the box first, like: <code>int ${esc(s.name)} = 0;</code>`};
+      const box=vars.get(s.name);let v=ev(s.e);if(s.op==='+=')v=box.v+v;if(s.op==='-=')v=box.v-v;box.v=conv(box.type,v);yield{kind:'assign',line:s.line,s,v:box.v,reads:ctx.reads};return}
+    case 'return':yield{kind:'return',line:s.line,s};throw new Ret();
+    case 'while':{let n=0;while(true){ctx.reads=[];const c=!!ev(s.cond);n++;yield{kind:'while',line:s.line,s,v:c,n,reads:ctx.reads};if(!c)break;yield* blk(s.body);yield{kind:'loopEnd',line:s.end,s}}return}
+    case 'if':{const c=!!ev(s.cond);const skip=c?(s.els?range(s.elseLine,s.elsEnd):[]):range(s.line+1,s.thenEnd);
+      yield{kind:'if',line:s.line,s,v:c,skip,reads:ctx.reads};
+      if(c)yield* blk(s.then);else if(s.els){if(s.elseIf)yield* st(s.els[0]);else{yield{kind:'else',line:s.elseLine,s};yield* blk(s.els)}}return}
+    case 'call':{const r=doCall(s);yield Object.assign({kind:'call',line:s.line,s,reads:ctx.reads},r);return}
+    }
+  }
+  return function*(){
+    for(const s of prog.top){if(s.k==='decl'){yield* st(s);continue}yield{kind:s.k,line:s.line,s}}
+    yield{kind:'main',line:prog.main.line,s:prog.main};
+    try{yield* blk(prog.main.body)}catch(x){if(!(x instanceof Ret))throw x}
+    ctx.motors.forEach(m=>m.on=false);
+    yield{kind:'end',line:prog.main.end};
+  };
+}
+
+/* ================= Explanations ================= */
+const D={
+  include:[['include','bring in']],using:[['using','use'],['namespace','a family of names']],main:[['int','whole number'],['main','the main one']],
+  while:[['while','as long as'],['true','yes, correct']],if:[['if','only if'],['pressing','being pressed now']],
+  elseif:[['else if','otherwise, if…']],else:[['else','otherwise']],
+  device:[['vex::','from the VEX family'],['brain','the robot computer'],['controller','the remote']],
+  motor:[['motor','a part that spins'],['PORT','a socket on the Brain'],['ratio','gears inside the motor']],
+  axis:[['Axis','one direction of a stick'],['position','where is it? -100 to 100']],
+  vel:[['setVelocity','set the speed'],['percent','out of 100']],spin:[['spin','turn'],['forward','ahead'],['reverse','backward']],
+  stop:[['stop','stop turning']],wait:[['wait','pause'],['msec','millisecond, 1/1000 of a second']],
+  printAt:[['print','write'],['at','in this spot'],['%d','a seat for a number']],box:[['int','whole-number box'],['bool','true/false box']]};
+const AXN={1:'the right stick, left-right (Axis1)',2:'the right stick, up-down (Axis2)',3:'the left stick, up-down (Axis3)',4:'the left stick, left-right (Axis4)'};
+const BTN_DESC={R1:'the top button on the right shoulder',R2:'the bottom button on the right shoulder',L1:'the top button on the left shoulder',L2:'the bottom button on the left shoulder'};
+const fv=v=>typeof v==='boolean'?`<b class="${v?'t':'fz'}">${v}</b>`:`<b>${esc(v)}</b>`;
+const readsTxt=e=>(e.reads||[]).map(r=>r.k==='axis'?`It reads ${AXN[r.a]}: ${fv(r.v)}.`:`It checks button <b>${r.b}</b>: pressed? ${fv(r.v)}.`).join(' ')+((e.reads||[]).length?' ':'');
+const lit=a=>a&&(a.k==='num'||a.k==='str')?a.v:'…';
+const CART={ratio36_1:'the red cartridge (36:1), slow and strong, 100 rpm',ratio18_1:'the green cartridge (18:1), the normal one, 200 rpm',ratio6_1:'the blue cartridge (6:1), fast, 600 rpm'};
+function explain(e,peek){
+  const s=e.s,R=(t,x,d)=>({t,x,d:d||[]});
+  switch(e.kind){
+  case 'include':return R('Open the VEX toolbox','<b>include</b> means “bring in”. This line brings in the VEX toolbox, full of commands for motors, controllers and the screen.',D.include);
+  case 'using':return R('Speak VEX','A <b>namespace</b> is a family of names. This line says: “The names below come from the VEX family.” So we can write <code>motor</code> instead of <code>vex::motor</code>.',D.using);
+  case 'comment':return R('A note for people','Lines that start with <code>//</code> are <b>comments</b>. They are notes for humans. The robot skips them completely.',[['//','a note, not code']]);
+  case 'emptyTop':return R('A lonely semicolon','This <code>;</code> has nothing in front of it, so it is an empty command. It does nothing. You could delete it and nothing would change.',[]);
+  case 'device':{
+    if(s.type==='brain')return R('Make the Brain','<b>brain</b> is the robot’s computer. This line gives it the name <b>'+esc(s.name)+'</b>.'+(s.pref?' <code>vex::</code> means “from the VEX family”. We already wrote <code>using namespace vex;</code>, so <code>vex::</code> is extra here, but it is not wrong.':''),D.device);
+    if(s.type==='controller')return R('Make the controller',`The remote control in your hands gets the name <b>${esc(s.name)}</b>. Later the code asks it: where are the sticks? Which buttons are pressed?`,D.device);
+    return R('Make a motor',`This makes a motor named <b>${esc(s.name)}</b>, plugged into <b>port ${s.port}</b> on the Brain. On this robot, port ${s.port} is ${roleName(s.port)}.${s.ratio?` <code>${s.ratio}</code> means ${CART[s.ratio]}.`:''}${s.rev!==undefined?` <code>${s.rev}</code> means ${s.rev?'<b>reversed</b>: forward and reverse are swapped for this motor.':'not reversed: forward means forward.'}`:' Nothing else is written, so it uses the normal green gears and is not reversed.'}`,D.motor)}
+  case 'main':return R('The program starts here!','<b>main</b> means “the main one”. All the lines above only made things. The robot starts doing things here, at the <code>{</code>.',D.main);
+  case 'while':{const always=s.text.trim()==='true';
+    if(peek)return R('Repeat forever!','<b>while</b> means “as long as”. <b>true</b> is always true, so everything inside the { } repeats forever. That is how the robot keeps listening to the controller.',D.while);
+    if(always)return R(`Repeat forever! Round ${e.n}`,`<b>while</b> means “as long as”. <b>true</b> is always true, so the robot does the { } part again and again. ${e.n===1?'This is the first round.':`This is round ${e.n}.`} Each round it reads the controller again.`,D.while);
+    return R(e.v?`Check, then repeat. Round ${e.n}`:'The loop is over',`The robot checks <code>${esc(s.text)}</code>. ${readsTxt(e)}The answer is ${fv(e.v)}.`,D.while)}
+  case 'if':{const same=s.sameAs?` <b>Look!</b> Line ${s.sameAs} asked the very same question. So the same button moves two motors at once.`:'';
+    const btn=(s.text.match(/Button(\w+)/)||[])[1];const where=btn&&BTN_DESC[btn]?` (${btn} is ${BTN_DESC[btn]}.)`:'';
+    const head=s.isElseIf?'<b>else if</b> means “otherwise, if…”. The first answer was false, so the robot asks a second question:':'<b>if</b> means “only if”. The robot asks:';
+    if(peek)return R(s.isElseIf?'Otherwise, ask again':'Ask a question',`${head} <code>${esc(s.text)}</code>.${where} If the answer is true, it runs the { } right below.${same}`,s.isElseIf?D.elseif:D.if);
+    return R(s.isElseIf?'Otherwise, ask again':'Ask a question',`${head} <code>${esc(s.text)}</code>.${where} ${readsTxt(e)}${e.v?'So it runs the { } part right below and skips the rest.':(s.els?'So it skips that { } and moves on to the else part.':'So it skips the { } part.')}${same}`,s.isElseIf?D.elseif:D.if)}
+  case 'else':return R('Otherwise…','<b>else</b> means “otherwise”. Every question before was answered false, so the robot does this part.',D.else);
+  case 'decl':{const ax=s.e&&s.e.k==='axis'?s.e.a:null;
+    const caseNote=s.name.toLowerCase()==='controller1'&&s.name!=='Controller1'?` Careful: <b>${esc(s.name)}</b> with a small c is a number box. <b>Controller1</b> with a big C is the controller. Different names!`:'';
+    if(ax)return R('Read a joystick',`This makes a whole-number box named <b>${esc(s.name)}</b> and fills it with ${AXN[ax]}. <b>position()</b> gives a number from <b>-100</b> (all the way down or left) to <b>100</b> (all the way up or right). The middle is 0.${peek?'':` Right now it is ${fv(e.v)}, so ${esc(s.name)} = ${fv(e.v)}.`}${caseNote}`,D.axis);
+    return R('Make a box',`This makes a new ${s.type==='bool'?'true/false box (<b>bool</b>)':s.type==='int'?'whole-number box (<b>int</b>)':'number box'} named <b>${esc(s.name)}</b>.${peek?'':` ${readsTxt(e)}Now <b>${esc(s.name)}</b> = ${fv(e.v)}.`}`,D.box)}
+  case 'assign':return R('Change a box',`This puts a new value into the box <b>${esc(s.name)}</b>.${peek?'':` ${readsTxt(e)}Now <b>${esc(s.name)}</b> = ${fv(e.v)}.`}`,D.box);
+  case 'return':return R('Leave main','<b>return</b> ends main. After this, the program stops.');
+  case 'loopEnd':return R('Back to the top',`This <code>}</code> closes the while loop. One round is done, so the robot jumps back up to line ${s.line} and reads the controller again.`,D.while);
+  case 'end':return R('The end',peek?'This <code>}</code> is the end of main. With <code>while(true)</code> above, the robot never gets here!':'The robot reached the last <code>}</code>. The program stops, and so do all the motors.');
+  case 'brace':return R('A closing brace','<code>{ }</code> is like a room that holds a group of commands. <code>}</code> closes the room door.');
+  case 'blank':return R('An empty line','Empty lines make code easier to read. The robot skips them.');
+  case 'call':{
+    if(s.motor){const name=esc(s.motor),dv=s.motor;
+      if(s.fn==='setVelocity'){const src=s.args[0].k==='var'?s.args[0].name:null;
+        if(peek)return R('Set the speed',`<b>setVelocity</b> sets how fast <b>${name}</b> will spin${src?`, using the number in the box <b>${esc(src)}</b>`:''}. A minus number means backward. It does <b>not</b> start the motor. It only sets the speed.`,D.vel);
+        return R('Set the speed',`<b>setVelocity</b> sets how fast <b>${name}</b> will spin: ${fv(Math.round(e.m.vel))}% of its top speed.${src?` The number comes from the box <b>${esc(src)}</b>.`:''}${e.m.vel<0?' A minus number means backward.':''}${Math.abs(e.raw)>100?' Motors can only go up to 100%, so it uses 100.':''} This does <b>not</b> start the motor. It only sets the speed.${e.m.on?' But '+name+' is already spinning from before, so it changes speed right away!':''}`,D.vel)}
+      if(s.fn==='spin'){const dir=s.dir>0?'forward':'reverse';
+        if(peek)return R('Spin!',`<b>spin</b> means turn. <b>${name}</b> starts turning <b>${dir}</b>${s.args.length===3?` at ${esc(lit(s.args[1]))}% speed`:' at the speed set before'}. It keeps turning until the code changes it or stops it.`,D.spin);
+        const v=Math.round(e.m.vel);const rev=e.m.rev?` ${name} was made with <code>true</code> (reversed), so it really turns the other way.`:'';
+        return R('Spin!',`<b>spin</b> means turn. <b>${name}</b> turns <b>${dir}</b> at ${fv(v)}% speed.${v===0?' The speed is 0, so it does not move.':v<0&&s.dir>0?' The speed is a minus number, so “forward” really turns backward!':''}${rev} ${e.effect} It keeps turning until the code changes it.`,D.spin)}
+      if(s.fn==='stop')return R('Stop!',`<b>stop</b> makes <b>${name}</b> stop turning.${peek?'':' '+e.effect} Without this line, the motor would keep going even after you let go of the button!`,D.stop);
+      if(s.fn==='setStopping')return R('How to stop',`This tells <b>${name}</b> how to stop: <b>${s.mode}</b>.`,D.stop)}
+    switch(s.name){
+    case 'vexcodeInit':return R('Warm-up time','<b>Init</b> means “get ready”. The robot checks its parts.');
+    case 'wait':{const n=peek?lit(s.args[0]):e.n,ms=peek?(s.unit==='msec'?n:n*1000):e.ms;const sec=typeof ms==='number'?+(ms/1000).toFixed(3):'…';
+      return R('Take a tiny break',`<b>wait</b> means pause. ${esc(n)} ${s.unit} = ${sec} seconds.${ms<=100?' That is faster than one blink!':''} <b>The motors keep spinning while the robot waits.</b>${!peek&&ms<600?' (Here we show it in slow motion.)':''}`,D.wait)}
+    case 'Brain.Screen.printAt':{const x=peek?lit(s.args[0]):e.x,y=peek?lit(s.args[1]):e.y,txt=peek?lit(s.args[2]):e.txt,f=peek?lit(s.args[2]):e.fmt;
+      const seat=/%d/.test(f)?(peek||!e.vals.length?' The <code>%d</code> is a seat saved for a number. The number after the comma sits there.':` The <code>%d</code> is a seat for a number. ${e.names[0]?`<b>${esc(e.names[0])}</b> = <b>${esc(Math.trunc(Number(e.vals[0])))}</b>, so that number sits in the seat.`:''}`):'';
+      return R('Write on the screen',`<b>printAt</b> writes <code>${esc(txt)}</code> at x = ${esc(x)} (across →) and y = ${esc(y)} (down ↓).${seat}${/ {2,}$/.test(f)?' The spaces at the end erase old digits.':''}`,D.printAt)}
+    case 'Brain.Screen.clearScreen':return R('Erase the whole screen','<b>clearScreen</b> wipes the whole screen clean.');
+    case 'Brain.Screen.clearLine':return R('Erase one line','<b>clearLine</b> wipes one line of the screen.');
+    case 'Brain.Screen.setPenColor':return R('Change the pen color',`New text is written in <b>${s.color}</b>.`);
+    }}
+  }
+  return R('','');
+}
+
+/* ================= Controller state ================= */
+const ctrl={ax:[0,0,0,0,0],btn:{}};
+const pads={L:{el:$('padL'),x:4,y:3},R:{el:$('padR'),x:1,y:2}};
+function showAxes(){for(const a of [1,2,3,4])$('ax'+a).textContent=Math.round(ctrl.ax[a]);
+  for(const k in pads){const P=pads[k],kn=P.el.querySelector('.knob');kn.style.left=(50+ctrl.ax[P.x]*0.31)+'%';kn.style.top=(50-ctrl.ax[P.y]*0.31)+'%'}}
+for(const k in pads){const P=pads[k];let drag=false;
+  const set=ev=>{const r=P.el.getBoundingClientRect();let x=(ev.clientX-r.left)/r.width*2-1,y=-((ev.clientY-r.top)/r.height*2-1);
+    const d=Math.hypot(x,y);if(d>1){x/=d;y/=d}x=x*100/0.8;y=y*100/0.8;ctrl.ax[P.x]=Math.round(clamp(x,-100,100));ctrl.ax[P.y]=Math.round(clamp(y,-100,100));
+    if(Math.abs(ctrl.ax[P.x])<6)ctrl.ax[P.x]=0;if(Math.abs(ctrl.ax[P.y])<6)ctrl.ax[P.y]=0;showAxes()};
+  P.el.addEventListener('pointerdown',ev=>{W.touched=true;drag=true;P.el.setPointerCapture(ev.pointerId);set(ev)});
+  P.el.addEventListener('pointermove',ev=>{if(drag)set(ev)});
+  const up=()=>{if(!drag)return;drag=false;if($('spring').checked){ctrl.ax[P.x]=0;ctrl.ax[P.y]=0;showAxes()}};
+  P.el.addEventListener('pointerup',up);P.el.addEventListener('pointercancel',up);
+  P.el.addEventListener('dblclick',()=>{ctrl.ax[P.x]=0;ctrl.ax[P.y]=0;showAxes()});
+}
+$('center').onclick=()=>{ctrl.ax=[0,0,0,0,0];showAxes()};
+const btnEls={};document.querySelectorAll('[data-btn]').forEach(b=>{btnEls[b.dataset.btn]=b;b.onclick=()=>{W.touched=true;setBtn(b.dataset.btn,!ctrl.btn[b.dataset.btn])}});
+function setBtn(b,v){ctrl.btn[b]=v;btnEls[b].setAttribute('aria-pressed',v)}
+const KEYAX={KeyW:[3,100],KeyS:[3,-100],KeyD:[4,100],KeyA:[4,-100],ArrowUp:[2,100],ArrowDown:[2,-100],ArrowRight:[1,100],ArrowLeft:[1,-100]};
+const KEYBT={KeyQ:'L1',KeyZ:'L2',KeyE:'R1',KeyC:'R2'};
+const typing=()=>/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+addEventListener('keydown',e=>{if(typing()||e.repeat)return;if(KEYAX[e.code]||KEYBT[e.code])W.touched=true;
+  if(KEYAX[e.code]){e.preventDefault();const [a,v]=KEYAX[e.code];ctrl.ax[a]=v;showAxes()}
+  if(KEYBT[e.code]){e.preventDefault();setBtn(KEYBT[e.code],true)}});
+addEventListener('keyup',e=>{if(KEYAX[e.code]){const [a,v]=KEYAX[e.code];if(ctrl.ax[a]===v){ctrl.ax[a]=0;showAxes()}}if(KEYBT[e.code])setBtn(KEYBT[e.code],false)});
+showAxes();
+
+/* ================= Editor ================= */
+const ta=$('src'),layer=$('layer'),gutterIn=$('gutterIn');
+let lineEls=[],gEls=[],lineMap=new Map(),prog=null,errLine=null;
+function sync(){layer.style.transform=`translate(${-ta.scrollLeft}px,${-ta.scrollTop}px)`;gutterIn.style.transform=`translateY(${-ta.scrollTop}px)`}
+function paint(){
+  const ls=ta.value.split('\n');
+  layer.innerHTML=ls.map(l=>`<div class="hl-ln">${hl(l)||' '}</div>`).join('');
+  gutterIn.innerHTML=ls.map((_,i)=>`<div class="g" data-l="${i+1}"><span class="num">${i+1}</span><span class="ptr">▶</span></div>`).join('');
+  lineEls=[...layer.children];gEls=[...gutterIn.children];sync();decorate(!!turbo);
+}
+ta.addEventListener('scroll',sync);
+let tabEscape=false;
+ta.addEventListener('keydown',e=>{
+  if(e.key==='Tab'&&!e.shiftKey&&!tabEscape){e.preventDefault();ta.setRangeText('    ',ta.selectionStart,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input'))}
+  if(e.key==='Escape')tabEscape=true;else if(e.key!=='Tab')tabEscape=false;
+  if(e.key==='Enter'){e.preventDefault();const a=ta.selectionStart;const ls=ta.value.lastIndexOf('\n',a-1)+1;const ind=(ta.value.slice(ls,a).match(/^\s*/)||[''])[0];
+    ta.setRangeText('\n'+ind+(ta.value[a-1]==='{'?'    ':''),a,ta.selectionEnd,'end');ta.dispatchEvent(new Event('input'))}});
+$('editor').querySelector('.gutter').addEventListener('click',e=>{const g=e.target.closest('.g');if(g)peek(+g.dataset.l)});
+function ensureVisible(l){const top=12+(l-1)*26,h=ta.clientHeight;if(top<ta.scrollTop+8||top+26>ta.scrollTop+h-34){ta.scrollTop=Math.max(0,top-h/2+13);sync()}}
+
+function buildLineMap(p){
+  lineMap=new Map();const put=(l,v)=>{if(!lineMap.has(l))lineMap.set(l,v)};
+  p.top.forEach(s=>put(s.line,{kind:s.k==='decl'?'decl':s.k,s}));put(p.main.line,{kind:'main',s:p.main});
+  const walk=b=>b.forEach(s=>{
+    if(s.k==='while'){put(s.line,{kind:'while',s});walk(s.body);put(s.end,{kind:'loopEnd',s})}
+    else if(s.k==='if'){put(s.line,{kind:'if',s});walk(s.then);put(s.thenEnd,{kind:'brace'});if(s.els){if(!s.elseIf)put(s.elseLine,{kind:'else',s});walk(s.els);put(s.elsEnd,{kind:'brace'})}}
+    else if(s.k!=='empty')put(s.line,{kind:s.k,s});});
+  walk(p.main.body);put(p.main.end,{kind:'end'});
+}
+function compile(){
+  try{prog=parse(ta.value);errLine=null;buildLineMap(prog);return true}
+  catch(e){prog=null;if(ctx)ctx.motors.forEach(m=>m.on=false);if(e&&e.line){errLine=e.line;showError(e.line,e.msg,false)}else{errLine=null;showError(1,'Something went wrong. Try Undo my changes.',false);console.error(e)}return false}
+}
+
+/* ================= Controller of the program ================= */
+const sim=Screen($('simScreen'));
+let gen=null,ctx=null,evCount=0,reads=[],replayQ=[],cur=null,visited=new Set(),skip=new Set(),finished=false,rounds=0,firstWhile=null,runErr=null;
+function start(){
+  sim.reset();visited=new Set();skip=new Set();cur=null;finished=false;rounds=0;firstWhile=null;runErr=null;evCount=0;reads=[];
+  const motors=new Map();if(prog)for(const [n,d] of prog.devices)if(d.type==='motor')motors.set(n,{name:n,port:d.port,ratio:d.ratio,rev:!!d.rev,vel:50,dir:1,on:false,mode:'brake'});
+  ctx={screen:sim,motors,reads:[],ctl:ctrl,read(fn){const v=replayQ.length?replayQ.shift():fn();reads.push(v);return v}};
+  gen=prog?makeRun(prog,ctx)():null;buildMotorChips();
+}
+function advance(){
+  if(!gen||finished||runErr)return null;
+  let r;try{r=gen.next()}catch(e){runErr=e;ctx.motors.forEach(m=>m.on=false);if(e&&e.line){errLine=e.line;showError(e.line,e.msg,true)}else console.error(e);stopAll();return null}
+  if(r.done){finished=true;return null}
+  evCount++;const ev=r.value;
+  if(ev.kind==='while'){visited.clear();skip.clear();if(!firstWhile)firstWhile=ev.s;if(ev.s===firstWhile)rounds=ev.n}
+  else if(cur)visited.add(cur.line);
+  if(ev.kind==='if')ev.skip.forEach(l=>skip.add(l));
+  cur=ev;return ev;
+}
+function decorate(hot){
+  lineEls.forEach((el,i)=>{const l=i+1;
+    el.classList.toggle('now',!hot&&!!cur&&cur.line===l);el.classList.toggle('skip',!hot&&skip.has(l));
+    el.classList.toggle('hot',!!hot&&(visited.has(l)||(!!cur&&cur.line===l)));el.classList.toggle('err',errLine===l);el.classList.remove('peek')});
+  gEls.forEach((g,i)=>{const l=i+1;g.classList.toggle('now',!hot&&!!cur&&cur.line===l);g.classList.toggle('err',errLine===l)});
+}
+function markReading(){
+  document.querySelectorAll('.reading').forEach(x=>x.classList.remove('reading'));
+  document.querySelectorAll('.mchip.now').forEach(x=>x.classList.remove('now'));
+  if(turbo||!cur)return;
+  (cur.reads||[]).forEach(r=>{if(r.k==='axis')pads[r.a===1||r.a===2?'R':'L'].el.classList.add('reading');else if(btnEls[r.b])btnEls[r.b].classList.add('reading')});
+  if(cur.s&&cur.s.motor&&chipEls[cur.s.motor])chipEls[cur.s.motor].classList.add('now');
+}
+const INTRO='The robot starts reading at the very top. Each time you press <b>Next step</b>, it does one line. Tip: push a stick or press R1 first, then step through and watch the code read it. Or press <b>Real speed</b> and drive!';
+function render(){
+  decorate(false);markReading();
+  $('roundChip').textContent=`while loop: round ${rounds}`;
+  const wb=$('waitbar');wb.hidden=!(cur&&cur.fn==='wait');wb.classList.remove('go');if(!wb.hidden){void wb.offsetWidth;wb.classList.add('go')}
+  $('backBtn').disabled=evCount<1||!!turbo;
+  $('nextBtn').disabled=!prog||finished||!!runErr||!!turbo;
+  if(runErr||(!prog&&errLine))return;
+  if(finished){setN('Finished','','The program is done','The robot ran every line. Press <b>Restart</b> to run it again.',[],'');return}
+  if(!cur){setN('Not started','','Ready?',INTRO,[],'');return}
+  const x=explain(cur,false);setN(`Now on line ${cur.line}`,lineText(cur.line),x.t,x.x,x.d,'');
+  ensureVisible(cur.line);
+}
+const lineText=l=>(ta.value.split('\n')[l-1]||'').trim();
+function setN(badge,code,title,text,dict,kind){
+  $('narr').classList.toggle('error',kind==='err');
+  const b=$('nBadge');b.textContent=badge;b.className='badge'+(kind==='peek'?' peekb':kind==='err'?' errb':'');
+  const c=$('nCode');c.hidden=!code;c.innerHTML=hl(code);
+  $('nTitle').textContent=title;$('nText').innerHTML=text;
+  $('nDict').innerHTML=(dict||[]).map(([w,m])=>`<span><b>${esc(w)}</b>${esc(m)}</span>`).join('');
+}
+function showError(line,msg,runtime){
+  decorate(false);
+  setN(`Problem on line ${line}`,lineText(line),runtime?'The robot got stuck':'The robot can’t read this yet',`${msg}<br><span class="hint">Fix it and the robot will try again. Mistakes are normal: every programmer makes them!</span>`,[],'err');
+  $('nextBtn').disabled=true;ensureVisible(line);
+}
+function peek(l){
+  stopPlay();decorate(!!turbo);lineEls[l-1]&&lineEls[l-1].classList.add('peek');
+  const txt=lineText(l);let info=lineMap.get(l);
+  if(!info)info={kind:txt.startsWith('//')?'comment':txt===''?'blank':/^[{}]$/.test(txt)?'brace':'blank'};
+  if(!prog){setN(`Line ${l}`,txt,'Fix the problem first','Once the code has no problems, I can explain each line.',[],'peek');return}
+  const x=explain(info,true);setN(`Looking at line ${l} (not running it)`,txt,x.t,x.x,x.d,'peek');
+}
+function step(){advance();render()}
+function back(){const target=evCount-1;const q=reads.slice();start();replayQ=q;for(let i=0;i<target;i++)advance();replayQ=[];render()}
+function restart(){stopAll();if(!prog&&!compile())return;start();render()}
+
+let playT=null;
+function stopPlay(){clearInterval(playT);playT=null;$('playBtn').textContent='Auto play';$('playBtn').classList.remove('on')}
+function startPlay(){if(finished||runErr)restart();playT=setInterval(()=>{advance();render();if(finished||runErr)stopPlay()},+$('speed').value);$('playBtn').textContent='Pause';$('playBtn').classList.add('on')}
+$('playBtn').onclick=()=>{if(playT)return stopPlay();stopTurbo();step();startPlay()};
+$('speed').onchange=()=>{if(playT){stopPlay();startPlay()}};
+$('nextBtn').onclick=()=>{stopPlay();step()};
+$('backBtn').onclick=()=>{stopPlay();back()};
+$('resetBtn').onclick=restart;
+
+let turbo=null,sleep=0;
+function turboOff(){clearInterval(turbo);turbo=null;$('turbo').hidden=true;$('turboBtn').textContent='Real speed';$('turboBtn').classList.remove('on')}
+function stopTurbo(){if(!turbo)return;turboOff();render()}
+function stopAll(){stopPlay();if(turbo)turboOff()}
+function startTurbo(fresh){
+  stopPlay();if(!prog)return;if(fresh||finished||runErr)start();sleep=0;
+  $('turbo').hidden=false;$('turboBtn').textContent='Stop real speed';$('turboBtn').classList.add('on');$('waitbar').hidden=true;markReading();
+  setN('Real speed','','Drive it!','No more slow motion. The robot runs the code as fast as a real VEX Brain. Use the sticks and buttons (or the keys) to drive. The green lines show the path the code took in this round.',[],'');
+  $('nextBtn').disabled=true;$('backBtn').disabled=true;
+  turbo=setInterval(()=>{
+    if(sleep>0){sleep-=20;stepWorld(.02);return}
+    let budget=0,n=0;
+    while(budget<20&&n<4000){const ev=advance();n++;if(!ev)break;if(ev.fn==='wait')budget+=ev.ms}
+    if(budget>20)sleep=budget-20;
+    stepWorld(.02);
+    decorate(true);$('turboN').textContent=rounds;$('roundChip').textContent=`while loop: round ${rounds}`;
+    if(finished||runErr){turboOff();if(finished)render()}
+  },20);
+  markReading();
+}
+$('turboBtn').onclick=()=>turbo?stopTurbo():startTurbo(false);
+
+let editT=null;
+ta.addEventListener('input',()=>{paint();clearTimeout(editT);editT=setTimeout(()=>{
+  const wasTurbo=!!turbo;stopAll();
+  if(compile()){start();if(ch&&ch.kind==='world'&&ch.auto){prepWorldRun()}if($('live').checked||wasTurbo)startTurbo(true);else render()}else decorate(false)},450)});
+function load(key){ta.value=EX[key];ta.scrollTop=0;ta.scrollLeft=0;paint();stopAll();if(compile()){start();render()}}
+$('examples').onchange=e=>load(e.target.value);
+$('resetCode').onclick=()=>load($('examples').value);
+$('wiring').onchange=e=>{wiring.port1=e.target.value;buildMotorChips()};
+
+/* ================= Motor chips ================= */
+let chipEls={},gearAng={};
+const GEAR='<svg viewBox="-14 -14 28 28" aria-hidden="true"><g class="gear"><circle r="9" fill="var(--robot-dark)"/><g fill="var(--robot-dark)"><rect x="-2.5" y="-13" width="5" height="6" rx="1"/><rect x="-2.5" y="7" width="5" height="6" rx="1"/><rect x="-13" y="-2.5" width="6" height="5" rx="1"/><rect x="7" y="-2.5" width="6" height="5" rx="1"/></g><circle r="3.5" fill="var(--bg)"/><rect x="-1" y="-9" width="2" height="5" fill="var(--hl)"/></g></svg>';
+function buildMotorChips(){
+  const box=$('motors');chipEls={};box.innerHTML='';
+  if(!ctx||!ctx.motors.size){box.innerHTML='<span class="hint">No motors are made yet.</span>';return}
+  for(const m of ctx.motors.values()){const d=document.createElement('div');d.className='mchip';
+    d.innerHTML=`${GEAR}<div class="mt"><span class="mn">${esc(m.name)}</span><span class="ms">port ${m.port} · ${roleName(m.port).replace('not connected to anything','not connected')}</span><span class="mv"></span></div>`;
+    box.appendChild(d);chipEls[m.name]=d;gearAng[m.name]=gearAng[m.name]||0}
+}
+function updateChips(dt){if(!ctx)return;for(const m of ctx.motors.values()){const el=chipEls[m.name];if(!el)continue;
+  const o=Math.round(out(m));el.querySelector('.mv').innerHTML=m.on?`<span class="${o>0?'t':o<0?'fz':''}">${o>0?'+':''}${o}%</span>`:`<span style="color:var(--muted)">stopped · set ${Math.round(m.vel)}%</span>`;
+  gearAng[m.name]+=phys(m)*dt*4;el.querySelector('.gear').setAttribute('transform',`rotate(${gearAng[m.name]})`)}}
+
+/* ================= World simulation ================= */
+const SCENES={free:{robot:[200,330,0],cube:[200,200],zone:null}};
+let scene=SCENES.free;
+const W={};
+function resetWorld(sc){if(sc)scene=sc;const [x,y,th]=scene.robot;
+  Object.assign(W,{x,y,th,arm:-20,claw:.2,prevClaw:.2,trail:[],armStall:false,L:0,R:0,clawP:0,everHeld:false,touched:false});
+  W.cube=scene.cube?{x:scene.cube[0],y:scene.cube[1],held:false}:null}
+resetWorld();
+$('resetRobot').onclick=()=>resetWorld();
+const SPD=130,TRACK=58,REACH=50;
+const clawPt=()=>[W.x+Math.sin(W.th)*REACH,W.y-Math.cos(W.th)*REACH];
+function stepWorld(dt){
+  let L=0,R=0,A=0,C=0;
+  if(ctx)for(const m of ctx.motors.values()){const r=role(m.port),p=phys(m)/100;if(r.r==='wheel'){if(r.side==='left')L=p;else R=p}else if(r.r==='arm')A=p;else if(r.r==='claw')C=p}
+  W.L=L;W.R=R;
+  const v=(L+R)/2*SPD;W.th+=(L-R)/TRACK*SPD*dt;
+  const nx=W.x+Math.sin(W.th)*v*dt,ny=W.y-Math.cos(W.th)*v*dt;W.x=clamp(nx,34,366);W.y=clamp(ny,34,366);
+  if(v!==0||L!==R){const t=W.trail;const l=t[t.length-1];if(!l||Math.hypot(l[0]-W.x,l[1]-W.y)>4){t.push([W.x,W.y]);if(t.length>600)t.shift()}}
+  const na=W.arm+(-A)*90*dt;W.armStall=(na>70&&A<0)||(na<-40&&A>0);W.arm=clamp(na,-40,70);
+  W.prevClaw=W.claw;W.clawP=C;W.claw=clamp(W.claw+C*1.6*dt,0,1);
+  const cb=W.cube;if(!cb)return;
+  const [px,py]=clawPt();
+  if(!cb.held&&W.prevClaw<=.75&&W.claw>.75&&W.arm<=-30&&Math.hypot(cb.x-px,cb.y-py)<22){cb.held=true;W.everHeld=true}
+  if(cb.held&&W.claw<.5)cb.held=false;
+  if(cb.held){cb.x=px;cb.y=py}
+  else{const d=Math.hypot(cb.x-W.x,cb.y-W.y);if(d<40&&d>0){cb.x=W.x+(cb.x-W.x)/d*40;cb.y=W.y+(cb.y-W.y)/d*40}cb.x=clamp(cb.x,14,386);cb.y=clamp(cb.y,14,386)}
+}
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function fit(cv,w,h){const dpr=window.devicePixelRatio||1,cw=cv.clientWidth;if(!cw)return null;const W2=Math.round(cw*dpr),H2=Math.round(cw*h/w*dpr);
+  if(cv.width!==W2||cv.height!==H2){cv.width=W2;cv.height=H2}const g=cv.getContext('2d');g.setTransform(W2/w,0,0,H2/h,0,0);return g}
+function drawField(C){const g=fit($('field'),400,400);if(!g)return;
+  for(let i=0;i<4;i++)for(let j=0;j<4;j++){g.fillStyle=(i+j)%2?C.t1:C.t2;g.fillRect(i*100,j*100,100,100)}
+  g.strokeStyle=C.fl;g.lineWidth=6;g.strokeRect(3,3,394,394);
+  if(scene.zone){const z=scene.zone;g.fillStyle=C.hl;g.globalAlpha=.45;g.fillRect(z[0],z[1],z[2],z[3]);g.globalAlpha=1;
+    g.setLineDash([8,6]);g.strokeStyle=C.fal;g.lineWidth=3;g.strokeRect(z[0],z[1],z[2],z[3]);g.setLineDash([]);
+    g.fillStyle=C.ink;g.font='700 13px Lexend, sans-serif';g.textAlign='center';g.fillText(z[4],z[0]+z[2]/2,z[1]+18)}
+  const cubeDraw=()=>{const cb=W.cube;if(!cb)return;g.fillStyle=C.cube;g.fillRect(cb.x-12,cb.y-12,24,24);g.strokeStyle=C.rd;g.lineWidth=2;g.strokeRect(cb.x-12,cb.y-12,24,24)};
+  if(W.cube&&!W.cube.held)cubeDraw();
+  if(W.trail.length>1){g.strokeStyle=C.acc;g.globalAlpha=.35;g.lineWidth=3;g.beginPath();W.trail.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.stroke();g.globalAlpha=1}
+  g.save();g.translate(W.x,W.y);g.rotate(W.th);
+  g.fillStyle=C.robot;g.fillRect(-26,-30,52,60);
+  g.fillStyle=C.rd;g.fillRect(-12,-8,24,18);
+  const op=1-W.claw;g.strokeStyle=C.claw;g.lineWidth=7;g.lineCap='round';
+  g.beginPath();g.moveTo(-8,-30);g.lineTo(-8-op*16,-60);g.moveTo(8,-30);g.lineTo(8+op*16,-60);g.stroke();
+  for(const [sx,p] of [[-34,W.L],[34,W.R]]){g.fillStyle=C.wheel;g.fillRect(sx-7,-22,14,44);
+    if(p){g.strokeStyle=p>0?C.tru:C.fal;g.fillStyle=g.strokeStyle;g.lineWidth=4;const len=34*Math.abs(p),d=p>0?-1:1;
+      g.beginPath();g.moveTo(sx+(sx<0?-16:16),0);g.lineTo(sx+(sx<0?-16:16),d*len);g.stroke();
+      g.beginPath();g.moveTo(sx+(sx<0?-16:16),d*(len+8));g.lineTo(sx+(sx<0?-16:16)-6,d*len);g.lineTo(sx+(sx<0?-16:16)+6,d*len);g.fill()}}
+  g.restore();
+  if(W.cube&&W.cube.held)cubeDraw();
+  g.font='700 15px JetBrains Mono, monospace';g.textAlign='center';g.fillStyle=C.ink;
+  if(ctx)for(const m of ctx.motors.values()){const r=role(m.port);if(r.r!=='wheel')continue;const sx=r.side==='left'?-62:62;
+    const px=W.x+Math.cos(W.th)*sx,py=W.y+Math.sin(W.th)*sx;g.fillText(m.name,clamp(px,36,364),clamp(py+5,16,392))}
+}
+function drawSide(C){const g=fit($('side'),320,200);if(!g)return;
+  g.fillStyle=C.bg;g.fillRect(0,0,320,200);
+  g.strokeStyle=C.fl;g.lineWidth=3;g.beginPath();g.moveTo(0,181);g.lineTo(320,181);g.stroke();
+  g.fillStyle=C.robot;g.fillRect(40,140,180,22);
+  g.fillStyle=C.wheel;for(const x of [70,190]){g.beginPath();g.arc(x,166,14,0,7);g.fill()}
+  g.fillStyle=C.rd;g.fillRect(104,70,12,72);
+  g.fillStyle='#1d2228';g.fillRect(48,112,46,28);g.fillStyle='#000';g.fillRect(51,115,40,20);
+  const a=W.arm*Math.PI/180,ex=110+130*Math.cos(a),ey=70-130*Math.sin(a);
+  g.strokeStyle=C.robot;g.lineWidth=10;g.lineCap='round';g.beginPath();g.moveTo(110,70);g.lineTo(ex,ey);g.stroke();
+  const op=(1-W.claw)*0.6;g.strokeStyle=C.claw;g.lineWidth=7;
+  for(const s of [1,-1]){const fa=a+s*op;g.beginPath();g.moveTo(ex,ey);g.lineTo(ex+32*Math.cos(fa),ey-32*Math.sin(fa));g.stroke()}
+  g.font='700 12px Lexend, sans-serif';g.textAlign='center';g.fillStyle=C.claw;g.fillText('claw',clamp(ex+18,20,300),clamp(ey-22,14,195));
+  g.fillStyle=C.wheel;g.beginPath();g.arc(110,70,7,0,7);g.fill();
+  const cb=W.cube;
+  if(cb){g.fillStyle=C.cube;
+    if(cb.held)g.fillRect(ex+20*Math.cos(a)-12,ey-20*Math.sin(a)-10,24,24);
+    else{const dx=cb.x-W.x,dy=cb.y-W.y,f=dx*Math.sin(W.th)-dy*Math.cos(W.th),l=dx*Math.cos(W.th)+dy*Math.sin(W.th),sx=110+f*2.44;
+      if(Math.abs(l)<26&&sx>-12&&sx<332)g.fillRect(sx-12,155,24,24)}}
+  g.font='600 12px Lexend, sans-serif';g.fillStyle=C.muted;g.textAlign='left';
+  g.fillText(W.armStall?'arm: at the end!':`arm ${W.arm>=65?'up':W.arm<=-35?'down':''}`.trim(),8,18);
+  g.fillText(`claw ${W.claw>.8?'closed':W.claw<.2?'open':''}`.trim(),8,34);
+  if(cb&&cb.held){g.fillStyle=C.tru;g.fillText('holding the cube!',8,50)}
+}
+function drawClaw(C){const g=fit($('claw'),600,200);if(!g)return;
+  g.fillStyle=C.bg;g.fillRect(0,0,600,200);
+  const op=1-W.claw,ang=op*0.26,cb=W.cube||{};
+  g.fillStyle=C.robot;g.fillRect(30,52,90,96);g.fillStyle=C.rd;g.beginPath();g.arc(92,100,20,0,7);g.fill();
+  g.fillStyle=C.bg;g.beginPath();g.arc(92,100,7,0,7);g.fill();
+  g.font='600 13px Lexend, sans-serif';g.fillStyle=C.muted;g.textAlign='center';g.fillText('claw motor',75,172);
+  if(cb.held){g.fillStyle=C.cube;g.fillRect(240,77,46,46);g.fillStyle=C.muted;g.fillText('cube',263,150)}
+  for(const sgn of [-1,1]){const hy=100+sgn*40;
+    g.save();g.translate(130,hy);g.rotate(sgn*ang);
+    g.fillStyle=C.claw;g.beginPath();g.roundRect(0,-9,180,18,9);g.fill();
+    g.fillStyle=C.rd;g.fillRect(110,sgn>0?-17:9,64,8);
+    g.fillStyle=C.wheel;g.beginPath();g.arc(0,0,10,0,7);g.fill();
+    g.restore()}
+  const p=W.clawP||0;
+  if(p){g.strokeStyle=p>0?C.tru:C.fal;g.fillStyle=g.strokeStyle;g.lineWidth=5;
+    for(const sgn of [-1,1]){const tipy=100+sgn*(40+Math.sin(ang)*180),x=340,y0=tipy+sgn*34,y1=tipy+sgn*12,d=p>0?1:-1;
+      const from=d>0?y0:tipy-sgn*40,to=d>0?y1:tipy-sgn*14;g.beginPath();g.moveTo(x,from);g.lineTo(x,to);g.stroke();
+      g.beginPath();g.moveTo(x,to+sgn*(d>0?-8:8));g.lineTo(x-7,to);g.lineTo(x+7,to);g.closePath();g.fill()}}
+  g.textAlign='left';g.font='700 22px Lexend, sans-serif';g.fillStyle=C.claw;
+  const word=W.claw>.97?'CLOSED':W.claw<.03?'OPEN':p>0?'closing…':p<0?'opening…':'holding still';
+  g.fillText(word,445,92);
+  g.font='500 14px JetBrains Mono, monospace';g.fillStyle=C.muted;g.fillText(`${Math.round(W.claw*100)}% closed`,445,116);
+  g.fillStyle=C.line||C.fl;g.fillRect(445,130,130,8);g.fillStyle=C.claw;g.fillRect(445,130,130*W.claw,8);
+  if(p&&(W.claw>=1||W.claw<=0)){g.fillStyle=C.fal;g.font='600 12px Lexend, sans-serif';g.fillText(W.claw>=1?'motor still squeezing!':'motor still pushing open!',445,158)}
+  let m=null;if(ctx)for(const x of ctx.motors.values())if(role(x.port).r==='claw')m=x;
+  const st=$('clawState');const txt=!m?'no claw motor in the code':m.on?`${m.name}: ${out(m)>0?'+':''}${Math.round(out(m))}% → ${phys(m)>0?'closing':phys(m)<0?'opening':'still'}`:`${m.name}: stopped`;
+  if(st.textContent!==txt)st.textContent=txt;
+}
+let last=performance.now(),C=null,cTick=0;
+function frame(now){
+  const realDt=Math.min(.05,(now-last)/1000);last=now;
+  const dt=realDt*(turbo?1:.35);
+  if(!C||now-cTick>1000){cTick=now;C={t1:css('--tile1'),t2:css('--tile2'),fl:css('--fieldline'),robot:css('--robot'),rd:css('--robot-dark'),wheel:css('--wheel'),acc:css('--accent'),
+    tru:css('--true'),fal:css('--false'),ink:css('--ink'),muted:css('--muted'),bg:css('--bg'),cube:css('--cube'),hl:css('--hl'),claw:css('--claw'),surface:css('--surface')}}
+  if(!turbo)stepWorld(dt);drawField(C);drawSide(C);drawClaw(C);checkChallenge();updateChips(realDt*(turbo?1:.35));
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+load('class');
+
+/* ================= Challenges ================= */
+const AUTO_HEAD=`#include "vex.h"
+using namespace vex;
+
+vex::brain         Brain;
+motor Motor1 = motor(PORT1);
+motor Motor10 = motor(PORT10);
+
+int main(){
+`;
+const SLOW=DEV.slice(0,DEV.indexOf('   int controller1'))+`   int controller1 = Controller1.Axis2.position();
+   int controller2 = Controller1.Axis3.position();
+   // slow mode: hold A for half speed
+   if (Controller1.ButtonA.pressing()){
+       controller1 = controller1 / 2;
+       controller2 = controller2 / 2;
+   }
+   Motor1.setVelocity(controller1,percent);
+   Motor1.spin(forward);
+   wait(10,msec);
+   Motor10.setVelocity(controller2,percent);
+   Motor10.spin(forward);
+   wait(10,msec);
+`+ARM+EX.fixed.slice(EX.fixed.indexOf(ARM)+ARM.length);
+const testScreen=Screen(document.createElement('div'));
+function runTest(input,rounds=2){
+  const motors=new Map();for(const [n,d] of prog.devices)if(d.type==='motor')motors.set(n,{name:n,port:d.port,ratio:d.ratio,rev:!!d.rev,vel:50,dir:1,on:false});
+  const ctl={ax:[0,0,0,0,0],btn:{}};for(const k in input.ax||{})ctl.ax[k]=input.ax[k];Object.assign(ctl.btn,input.btn||{});
+  const tctx={screen:testScreen,motors,reads:[],ctl,read(fn){return fn()}};
+  const g=makeRun(prog,tctx)();let w=0,n=0;
+  try{while(n++<20000){const r=g.next();if(r.done)break;if(r.value.kind==='while'&&++w>rounds)break}}catch(e){return{err:e}}
+  const by={};for(const m of motors.values())by[m.port]=Math.round(out(m));return{by}
+}
+const pv=v=>v==null?'missing':v===0?'stopped':`${v>0?'+':''}${v}%`;
+const T=(name,fn)=>({name,fn});
+function M(input){const r=runTest(input);if(r.err)throw r.err;return r.by}
+const CHS=[
+ {id:'free',title:'Free play',menu:'Free play (no challenge)',story:'Pick a challenge from the menu above. Each one gives the robot a job. You write the code, and the page checks if the robot did the job. Start with Challenge 1!',scene:SCENES.free},
+ {id:'c1',title:'1. Fix the claw buttons',kind:'test',starter:()=>EX.class,scene:SCENES.free,
+  story:'The driver is upset! When she presses <b>R1</b> to lift the arm, the claw moves too, and the cube falls out. Fix the code: <b>R1 and R2</b> should move only the arm, and <b>L1 and L2</b> should move only the claw.',
+  goal:'Change the code, then press Check my code. Make all 7 checks green.',
+  tests:[
+   T('R1 moves the arm',()=>{const v=M({btn:{R1:1}})[8];return[v!==0,`With R1 pressed, the arm motor is ${pv(v)}.`]}),
+   T('R2 moves the arm the other way',()=>{const a=M({btn:{R1:1}})[8],b=M({btn:{R2:1}})[8];return[b!==0&&Math.sign(a)===-Math.sign(b),`With R2 pressed, the arm motor is ${pv(b)}.`]}),
+   T('R1 and R2 do not move the claw',()=>{const a=M({btn:{R1:1}})[3],b=M({btn:{R2:1}})[3];return[a===0&&b===0,`With R1 pressed, the claw motor is ${pv(a)}. With R2, it is ${pv(b)}.`]}),
+   T('L1 moves the claw',()=>{const v=M({btn:{L1:1}})[3];return[v!==0&&v!=null,`With L1 pressed, the claw motor is ${pv(v)}.`]}),
+   T('L2 moves the claw the other way',()=>{const a=M({btn:{L1:1}})[3],b=M({btn:{L2:1}})[3];return[b!==0&&b!=null&&Math.sign(a)===-Math.sign(b),`With L2 pressed, the claw motor is ${pv(b)}.`]}),
+   T('No buttons: the arm and the claw stop',()=>{const r=M({});return[r[8]===0&&r[3]===0,`With no buttons, the arm is ${pv(r[8])} and the claw is ${pv(r[3])}.`]}),
+   T('The sticks still drive the wheels',()=>{const r=M({ax:{2:60,3:-40}});return[r[1]===60&&r[10]===-40,`Right stick 60 and left stick -40 give Motor1 ${pv(r[1])} and Motor10 ${pv(r[10])}. They should be +60% and -40%.`]}),
+  ],
+  hints:['Two <code>if</code> parts ask about <code>ButtonR1</code>. One is for the arm. Which one is for the claw?','Lines 34 and 37 are the questions for the claw.','On line 34 change <code>ButtonR1</code> to <code>ButtonL1</code>. On line 37 change <code>ButtonR2</code> to <code>ButtonL2</code>.'],
+  solution:()=>EX.fixed},
+ {id:'c2',title:'2. Slow mode',kind:'test',starter:()=>EX.fixed,scene:SCENES.free,
+  story:'Driving at full speed next to the cube is hard. Add a <b>slow mode</b>: while the driver holds button <b>A</b>, both wheels go at <b>half speed</b>. When A is not pressed, the robot drives normally.',
+  goal:'Press Check my code. Make all 5 checks green.',
+  tests:[
+   T('No A: both sticks up = full speed',()=>{const r=M({ax:{2:100,3:100}});return[r[1]===100&&r[10]===100,`Motor1 is ${pv(r[1])} and Motor10 is ${pv(r[10])}. Both should be +100%.`]}),
+   T('Hold A: half speed',()=>{const r=M({ax:{2:100,3:-80},btn:{A:1}});return[r[1]===50&&r[10]===-40,`Right stick 100 and left stick -80 with A held give Motor1 ${pv(r[1])} and Motor10 ${pv(r[10])}. They should be +50% and -40%.`]}),
+   T('Let go of A: full speed again',()=>{const r=M({ax:{2:-100,3:-100}});return[r[1]===-100&&r[10]===-100,`Motor1 is ${pv(r[1])} and Motor10 is ${pv(r[10])}. Both should be -100%.`]}),
+   T('R1 still moves the arm',()=>{const v=M({btn:{R1:1}})[8];return[v!==0,`With R1 pressed, the arm is ${pv(v)}.`]}),
+   T('L1 still moves the claw',()=>{const v=M({btn:{L1:1}})[3];return[v!==0&&v!=null,`With L1 pressed, the claw is ${pv(v)}.`]}),
+  ],
+  hints:['You need a new <code>if</code> that asks: <code>Controller1.ButtonA.pressing()</code>','Inside that if, make the numbers smaller: <code>controller1 = controller1 / 2;</code> Do the same for controller2.','Order matters! Read <b>both</b> sticks first, then the A question, and only then use <code>setVelocity</code>. Move line 20 up, right under line 16.'],
+  solution:()=>SLOW},
+ {id:'c3',title:'3. Park in the box',kind:'world',auto:true,
+  scene:{robot:[200,340,0],cube:null,zone:[155,65,90,90,'PARK HERE']},
+  starter:()=>AUTO_HEAD+`   // Drive forward. Then the program ends and the motors stop.
+   Motor1.spin(forward, 50, percent);
+   Motor10.spin(forward, 50, percent);
+   wait(1, seconds);
+}`,
+  story:'No driver this time! The robot must drive <b>by itself</b> and stop inside the yellow box. Robots that drive themselves are called <b>autonomous</b>. The starter code drives for 1 second. That is not enough.',
+  goal:'Change the code so the robot stops inside the box. Press Run to test.',
+  items:['The robot is inside the box','The robot has stopped'],
+  check:()=>{const z=scene.zone,inz=W.x>z[0]&&W.x<z[0]+z[2]&&W.y>z[1]&&W.y<z[1]+z[3],st=W.L===0&&W.R===0&&(finished||!turbo);return{items:[inz,st],done:inz&&st}},
+  hints:['Press Run and watch. Does the robot stop too early or too late?','Change the number in <code>wait</code>. Try 3 seconds.','Each floor tile is 100 units. At 50% speed, the robot moves about 65 units every second. The box is about 230 units away. 230 ÷ 65 ≈ ?','For a more exact time, use milliseconds: <code>wait(3500, msec);</code>'],
+  solution:()=>AUTO_HEAD+`   // Drive forward for 3.5 seconds, then stop.
+   Motor1.spin(forward, 50, percent);
+   Motor10.spin(forward, 50, percent);
+   wait(3500, msec);
+   Motor1.stop();
+   Motor10.stop();
+}`},
+ {id:'c4',title:'4. Turn the corner',kind:'world',auto:true,
+  scene:{robot:[90,340,0],cube:null,zone:[250,60,100,100,'PARK HERE']},
+  starter:()=>AUTO_HEAD+`   // 1. Drive forward
+   Motor1.spin(forward, 50, percent);
+   Motor10.spin(forward, 50, percent);
+   wait(3500, msec);
+
+   // 2. Turn right (write your code here)
+
+
+   // 3. Drive forward into the box (write your code here)
+
+
+   Motor1.stop();
+   Motor10.stop();
+}`,
+  story:'Now the box is around the corner. The robot must drive forward, <b>turn right</b>, and then drive into the box. All by itself!',
+  goal:'Finish parts 2 and 3 of the code. Press Run to test.',
+  items:['The robot is inside the box','The robot has stopped'],
+  check:()=>CHS[3].check(),
+  hints:['To turn right, the <b>left</b> wheel goes forward and the <b>right</b> wheel goes backward.','Which motor is the left wheel? Look at the Motors box under the field.','<code>Motor10.spin(forward, 50, percent);</code> and <code>Motor1.spin(reverse, 50, percent);</code> then <code>wait</code>. At 50% speed, a quarter turn takes about 700 msec.','After the turn, make <b>both</b> wheels spin forward again, and wait about 3 seconds.'],
+  solution:()=>AUTO_HEAD+`   // 1. Drive forward
+   Motor1.spin(forward, 50, percent);
+   Motor10.spin(forward, 50, percent);
+   wait(3500, msec);
+
+   // 2. Turn right: left wheel forward, right wheel backward
+   Motor10.spin(forward, 50, percent);
+   Motor1.spin(reverse, 50, percent);
+   wait(700, msec);
+
+   // 3. Drive forward into the box
+   Motor1.spin(forward, 50, percent);
+   Motor10.spin(forward, 50, percent);
+   wait(3200, msec);
+
+   Motor1.stop();
+   Motor10.stop();
+}`},
+ {id:'c5',title:'5. Deliver the cube',kind:'world',auto:false,
+  scene:{robot:[200,340,0],cube:[200,190],zone:[20,20,110,110,'DROP ZONE']},
+  starter:()=>EX.fixed,
+  story:'Time to drive! Pick up the yellow cube and drop it in the <b>drop zone</b> in the corner. Use the controller or the keys (W/S, arrows, Q/Z for the claw, E/C for the arm). This code already has the claw on L1 and L2.',
+  goal:'Press Start, then drive. The cube must end up on the floor inside the drop zone.',
+  items:['Grab the cube','Carry it into the drop zone','Let go of the cube in the zone'],
+  check:()=>{const cb=W.cube,z=scene.zone,inz=cb&&cb.x>z[0]&&cb.x<z[0]+z[2]&&cb.y>z[1]&&cb.y<z[1]+z[3];return{items:[W.everHeld,W.everHeld&&inz,inz&&!cb.held],done:!!(inz&&!cb.held&&W.everHeld)}},
+  hints:['First lower the arm all the way (hold R2 or the C key). The claw can only grab when the arm is down.','Open the claw (L2 or Z), then drive so the cube sits right between the claw fingers.','Close the claw (L1 or Q). The side view says “holding the cube!” when you have it.','Lift the arm a little (R1 or E), drive into the corner, then open the claw (L2 or Z).'],
+  solution:null,plan:'This one is about driving, so there is no code to copy. Plan: arm down → claw open → drive to the cube → claw closed → arm up a little → turn and drive to the corner → claw open. Expert idea: can you do it with code only, no controller?'},
+];
+let ch=null,chId='free',chRun=false,chDone=false,hintN=0,solStage=0,lastItems='';
+const drafts={};let doneSet=new Set();
+try{doneSet=new Set(JSON.parse(localStorage.getItem('clawbot-done')||'[]'))}catch(_){}
+function saveDone(){try{localStorage.setItem('clawbot-done',JSON.stringify([...doneSet]))}catch(_){}}
+function fillMenu(){$('chSel').innerHTML=CHS.map(c=>`<option value="${c.id}">${c.menu||c.title}${doneSet.has(c.id)?' ✓':''}</option>`).join('');$('chSel').value=chId;
+  $('chBadge').textContent=`${CHS.filter(c=>doneSet.has(c.id)).length} of ${CHS.length-1} challenges done`}
+function setCode(text){ta.value=text;ta.scrollTop=0;ta.scrollLeft=0;paint();stopAll();if(compile()){start();render()}}
+function selectChallenge(id){
+  drafts[chId]=ta.value;chId=id;ch=CHS.find(c=>c.id===id);chRun=false;chDone=false;hintN=0;solStage=0;lastItems='';
+  $('chSel').value=id;$('chTitle').textContent=ch.title;$('chStory').innerHTML=ch.story;$('chGoal').textContent=ch.goal||'';$('chGoal').hidden=!ch.goal;
+  $('chSide').hidden=id==='free';$('chMsg').hidden=true;$('chHints').innerHTML='';$('chSolBox').hidden=true;$('chSol').textContent='Show a solution';
+  $('chGo').textContent=ch.kind==='test'?'Check my code':ch.auto?'Run ▶':'Start ▶';
+  stopAll();ctrl.ax=[0,0,0,0,0];showAxes();for(const b of Object.keys(btnEls))setBtn(b,false);
+  resetWorld(ch.scene);
+  if(id!=='free'||drafts.free)setCode(drafts[id]||(ch.starter?ch.starter():ta.value));
+  drawChecks(ch.kind==='test'?ch.tests.map(t=>({name:t.name})):(ch.items||[]).map(n=>({name:n})));
+}
+function drawChecks(list){$('chChecks').innerHTML=list.map(c=>`<li class="${c.ok===true?'ok':c.ok===false?'bad':''}"><span class="mk">${c.ok===true?'✓':c.ok===false?'✗':'•'}</span><span>${c.name}</span>${c.det?`<span class="det">${c.det}</span>`:''}</li>`).join('')}
+function win(){if(chDone)return;chDone=true;doneSet.add(chId);saveDone();fillMenu();
+  const bonus=ch.id==='c5'&&!W.touched?' Autonomous bonus ★: you did it without touching the controller!':'';
+  const m=$('chMsg');m.className='chal-msg';m.hidden=false;m.innerHTML=`<span class="big">★ Challenge complete!</span>Great job.${bonus} ${CHS[CHS.indexOf(ch)+1]?'Ready for the next one? Pick it from the menu.':'You finished every challenge!'}`}
+function prepWorldRun(){resetWorld(ch.scene);chRun=true;lastItems='';$('chMsg').hidden=true;
+  if(ch.auto){ctrl.ax=[0,0,0,0,0];showAxes();for(const b of Object.keys(btnEls))setBtn(b,false)}}
+$('chGo').onclick=()=>{
+  if(!prog){const m=$('chMsg');m.className='chal-msg warn';m.hidden=false;m.textContent='Your code has a problem. Fix the red line first (read the message under the code).';return}
+  if(ch.kind==='test'){
+    const res=ch.tests.map(t=>{try{const [ok,det]=t.fn();return{name:t.name,ok,det:ok?'':det}}catch(e){return{name:t.name,ok:false,det:e&&e.msg?`The robot got stuck on line ${e.line}: ${e.msg}`:'The robot got stuck.'}}});
+    drawChecks(res);const n=res.filter(r=>r.ok).length;
+    if(n===res.length)win();else{const m=$('chMsg');m.className='chal-msg warn';m.hidden=false;m.textContent=`${n} of ${res.length} checks pass. Read the orange ones, change your code, and check again.`}
+    return}
+  prepWorldRun();startTurbo(true);
+  if(!ch.auto)document.querySelector('.stage').scrollIntoView({behavior:'smooth',block:'start'});
+};
+$('chHint').onclick=()=>{if(hintN<ch.hints.length){hintN++;$('chHints').innerHTML=ch.hints.slice(0,hintN).map(h=>`<li>${h}</li>`).join('')}
+  if(hintN>=ch.hints.length)$('chHint').textContent='No more hints';};
+$('chSol').onclick=()=>{
+  if(solStage===0){solStage=1;$('chSol').textContent='Really? Try once more first. Click again to show.';return}
+  $('chSolBox').hidden=false;$('chSol').textContent='Solution shown';
+  if(ch.solution){$('chSolCode').innerHTML=ch.solution().split('\n').map(hl).join('\n');$('chUseSol').hidden=false}
+  else{$('chSolCode').textContent=ch.plan;$('chSolCode').style.whiteSpace='normal';$('chUseSol').hidden=true}};
+$('chUseSol').onclick=()=>{setCode(ch.solution());if(ch.kind==='world'){prepWorldRun();startTurbo(true)}};
+$('chSel').onchange=e=>selectChallenge(e.target.value);
+function checkChallenge(){if(!ch||ch.kind!=='world'||!chRun)return;const r=ch.check();const key=r.items.join();
+  if(key!==lastItems){lastItems=key;drawChecks(ch.items.map((n,i)=>({name:n,ok:r.items[i]?true:undefined})))}
+  if(r.done)win()}
+fillMenu();selectChallenge('free');
+
+/* ================= Word cards ================= */
+const WORDS=[
+ ['vex::brain Brain;','make the Brain','The robot’s computer gets the name Brain.','brain'],
+ ['vex::controller Controller1;','make the controller','The remote in your hands gets a name.','controller'],
+ ['motor Motor1 = motor(PORT1);','make a motor on port 1','Like plugging a toy into socket number 1.','motor, port one'],
+ ['ratio18_1','the green gear cartridge','Gears inside the motor. Red 36:1 is slow and strong. Blue 6:1 is fast.','ratio eighteen to one'],
+ ['true / false in motor( )','reversed or not','true swaps forward and reverse.','reversed'],
+ ['Axis3 / Axis2','left stick / right stick, up-down','Up is 100, middle is 0, down is -100.','axis three, axis two'],
+ ['Axis4 / Axis1','left stick / right stick, left-right','Right is 100, left is -100.','axis four, axis one'],
+ ['.position()','where is the stick?','Gives a number from -100 to 100.','position'],
+ ['setVelocity(50, percent)','set the speed','Like picking a speed before you run. You are not running yet.','set velocity'],
+ ['percent','out of 100','100 percent is full speed.','percent'],
+ ['spin(forward)','start turning','Go! Keep turning until told otherwise.','spin forward'],
+ ['reverse','backward','The opposite of forward.','reverse'],
+ ['stop()','stop turning','Without it, a motor keeps going!','stop'],
+ ['ButtonR1 / ButtonR2','right shoulder buttons','R1 is the top one. R2 is the bottom one.','button R one'],
+ ['else if','otherwise, if…','A second question, asked only when the first answer is no.','else if'],
+ ['// comment','a note for people','The robot skips it.','comment'],
+ ['int','a whole-number box','Holds numbers like 63 or -100.','int'],
+ ['wait(10, msec)','pause 10 milliseconds','Motors keep spinning while the robot waits!','wait ten milliseconds'],
+];
+$('cards').innerHTML=WORDS.map(([w,m,eg,say])=>`<div class="card"><div class="w"><span>${esc(w)}</span><button data-say="${say}" aria-label="Say ${say}">Say it</button></div><div class="m">${m}</div><div class="eg">${eg}</div></div>`).join('');
+$('cards').addEventListener('click',e=>{const b=e.target.closest('[data-say]');if(!b)return;
+  try{const u=new SpeechSynthesisUtterance(b.dataset.say);u.lang='en-US';u.rate=.8;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(_){}});
+
+/* ================= Practice ================= */
+const S=(ax,btn)=>({ax:Object.assign({1:0,2:0,3:0,4:0},ax||{}),btn:btn||{}});
+const GROUPS=[
+ {title:'1. Read the code',lead:'Find the answer by reading the program. Line numbers are on the left of the code.',qs:[
+  ['Which port is the <code>claw</code> motor plugged into?',['Port 8','Port 3','Port 10'],1,'Yes! Line 10: <code>motor claw(PORT3, ratio18_1, false);</code>'],
+  ['How many motors does this program make?',['2','4','5'],1,'Yes! Motor1, Motor10, arm and claw: lines 7 to 10.'],
+  ['Which line reads the <b>left</b> stick?',['Line 16','Line 20','Line 24'],1,'Yes! Line 20 reads Axis3, the left stick up-down.'],
+  ['What is <code>controller1</code> on line 16?',['The controller you hold','A number box that holds the right stick’s number','A motor'],1,'Yes! It is an int box. The controller is Controller1 with a big C.'],
+  ['Line 11 is just <code>;</code>. What does it do?',['Nothing at all','It stops the program','It stops all motors'],0,'Yes! An empty command does nothing. You could delete it.'],
+  ['What does <code>ratio18_1</code> tell us about the arm motor?',['It is plugged into port 18','It has the green 18:1 gears inside','It spins 18 times'],1,'Yes! ratio18_1 is the green gear cartridge, 200 rpm.'],
+ ]},
+ {title:'2. Predict what happens',lead:'Think first, choose your answer, then press Try it to see the robot do it.',qs:[
+  ['The right stick is all the way up. The left stick is in the middle. No buttons. Which motor spins?',['Only Motor1, at 100%','Only Motor10','Both wheels'],0,'Yes! Axis2 (right stick) goes into controller1, and that sets Motor1’s speed.',S({2:100})],
+  ['Both sticks are all the way up. What does the robot do?',['Spins in place','Drives straight forward','Stays still'],1,'Yes! Both wheels roll forward at 100%, so it drives straight.',S({2:100,3:100})],
+  ['The left stick is all the way down and the right stick is all the way up. What happens?',['It drives forward','It spins in place','It stops'],1,'Yes! One wheel goes forward and one goes backward, so the robot turns on the spot.',S({2:100,3:-100})],
+  ['You hold <b>R2</b>. What do the arm and the claw do?',['Only the arm goes down','The arm goes down and the claw opens','Nothing moves'],1,'Yes! Both if parts check ButtonR2, so both motors spin in reverse.',S({},{R2:true})],
+  ['No buttons are pressed. Which lines run for the arm and the claw?',['Lines 26 and 35','Lines 32 and 41','No lines run'],1,'Yes! Both questions are false, so the else parts run: arm.stop() and claw.stop().',S({})],
+  ['During <code>wait(10,msec);</code> on line 19, is Motor1 still spinning?',['Yes, motors keep spinning while the robot waits','No, wait stops all motors'],0,'Yes! wait only pauses the code. The motors keep going.',S({2:60})],
+  ['You press <b>R1</b> and <b>R2</b> at the same time. What does the arm do?',['It goes up, like R1','It goes down, like R2','It stops'],0,'Yes! The R1 question comes first. Its answer is true, so the else if part is skipped.',S({},{R1:true,R2:true})],
+  ['The left stick is pushed halfway down: Axis3 = -50. What is Motor10’s speed?',['50%','-50%, so it rolls backward','0%'],1,'Yes! controller2 = -50, and a minus speed means backward.',S({3:-50})],
+ ]},
+ {title:'3. Change it and fix it',lead:'Programmers change code all the time. Pick the change that does the job.',qs:[
+  ['The driver wants <b>L1</b> and <b>L2</b> to move the claw. Which lines should change?',['Lines 25 and 28','Lines 34 and 37','Lines 35 and 38'],1,'Yes! Lines 34 and 37 are the two claw questions. Change ButtonR1 to ButtonL1 and ButtonR2 to ButtonL2.'],
+  ['Fill in the blank to make the claw use L1:<br><code>if (Controller1.______.pressing())</code>',['ButtonL1','L1Button','buttonL1'],0,'Yes! ButtonL1, with a big B and a big L.'],
+  ['Someone deletes line 32, <code>arm.stop();</code>. You press R1 and then let go. What happens?',['The arm stops','The arm keeps moving','The program crashes'],1,'Yes! Nothing tells the arm to stop, so it keeps going until it hits the end.'],
+  ['Which number on line 26 makes the arm <b>slower</b>?',['100','80','30'],2,'Yes! 30 percent is slower than 80 percent.'],
+  ['On line 9, <code>true</code> is changed to <code>false</code>. What happens when you press R1 now?',['The arm moves the other way','The arm moves faster','Nothing changes'],0,'Yes! true means reversed. Without it, forward turns the other way.'],
+  ['Line 18 is changed to <code>Motor1.spin(forward)</code> with no <code>;</code>. What will happen?',['The robot drives faster','The program has a problem: the line needs a ;','Nothing, it still works'],1,'Yes! Every command ends with a semicolon. Try it in Lab 1 and read the message.'],
+  ['Line 17 says <code>Controller1</code> instead of <code>controller1</code>. Is that OK?',['Yes, big and small letters are the same','No, Controller1 is the controller, not the number box'],1,'Yes! In C++, big and small letters make different names.'],
+ ]},
+];
+const ALL=GROUPS.flatMap(g=>g.qs);let qn=0;const right=new Set();
+$('quiz').innerHTML=GROUPS.map(g=>`<div class="qgroup"><h3>${g.title}</h3><p class="lead">${g.lead}</p><div class="quiz">${g.qs.map(([q,opts,ans,fb,sc])=>{const qi=qn++;
+  return `<div class="q" data-q="${qi}"><div class="qt">${qi+1}. ${q}</div>${sc?`<div class="scen">${scenTxt(sc)}</div>`:''}${opts.map((o,oi)=>`<button class="opt" data-o="${oi}">${o}</button>`).join('')}${sc?`<button class="tryit" data-try="${qi}">▶ Try it</button>`:''}<div class="fb" aria-live="polite"></div></div>`}).join('')}</div></div>`).join('');
+function scenTxt(sc){const a=[];if(sc.ax[2])a.push(`Axis2 = ${sc.ax[2]}`);if(sc.ax[3])a.push(`Axis3 = ${sc.ax[3]}`);const b=Object.keys(sc.btn).filter(k=>sc.btn[k]);
+  if(b.length)a.push(b.join(' + ')+' pressed');return a.length?a.join(' · '):'sticks centered · no buttons'}
+const score=()=>{$('score').textContent=`${right.size} of ${ALL.length} correct`+(right.size===ALL.length?'. All correct. Great driving and great reading!':'')};score();
+function tryIt(sc){
+  if(chId!=='free')selectChallenge('free');
+  if(ta.value!==EX.class){$('examples').value='class';load('class')}
+  ctrl.ax=[0,0,0,0,0];for(const k in sc.ax)ctrl.ax[k]=sc.ax[k];showAxes();
+  for(const b of Object.keys(btnEls))setBtn(b,!!sc.btn[b]);
+  resetWorld(SCENES.free);startTurbo(true);
+  document.querySelector('.stage').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('quiz').addEventListener('click',e=>{
+  const t=e.target.closest('[data-try]');if(t){tryIt(ALL[+t.dataset.try][4]);return}
+  const b=e.target.closest('.opt');if(!b)return;const box=b.closest('.q'),qi=+box.dataset.q,oi=+b.dataset.o,Q=ALL[qi];
+  box.querySelectorAll('.opt').forEach(o=>o.classList.remove('right','wrong'));
+  if(oi===Q[2]){b.classList.add('right');box.querySelector('.fb').innerHTML=Q[3];right.add(qi)}
+  else{b.classList.add('wrong');box.querySelector('.fb').textContent=Q[4]?'Not quite. Press Try it and watch the robot, then choose again.':'Not quite. Look at the code in Lab 1 again, then choose again.'}
+  score()});
+$('quizReset').onclick=()=>{right.clear();document.querySelectorAll('#quiz .opt').forEach(o=>o.classList.remove('right','wrong'));document.querySelectorAll('#quiz .fb').forEach(f=>f.textContent='');score()};
+})();
+</script>
+
+</body></html>
