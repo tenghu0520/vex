@@ -10,7 +10,7 @@
   --accent:#d23b2f; --true:#0f8a66; --false:#b86e00; --hl:#ffd84d; --bad:#c62828;
   --code-bg:#17202b; --code-ink:#dfe7ef; --code-dim:#66778a; --code-now:#2b3a4a; --code-err:#5a1f24;
   --tile1:#d9dfe5; --tile2:#cfd6dd; --fieldline:#b4bec8; --robot:#8d99a6; --robot-dark:#4f5b67; --wheel:#2a2f35;
-  --cube:#e3a90c; --ctrl:#232a31; --ctrl-ink:#e6edf3; --screen:#05070a;
+  --cube:#e3a90c; --claw:#d6336c; --ctrl:#232a31; --ctrl-ink:#e6edf3; --screen:#05070a;
   --sk:#7fc8ff; --ss:#ffc66d; --sf:#9be38a; --sn:#f0a3ff; --sc:#7d8d9c; --sp:#ff9e7a;
   --f-body:"Lexend",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-code:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
@@ -18,11 +18,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0f151b; --surface:#17212b; --ink:#e6edf3; --muted:#9aaab9; --line:#2a3744;
   --accent:#ff6257; --true:#3fd3a2; --false:#f2a93b; --bad:#ff7b72; --code-bg:#0b1117; --code-now:#1f2d3b; --code-err:#4a1a1e;
-  --tile1:#26313c; --tile2:#212b35; --fieldline:#3a4856; --robot:#7a8693; --robot-dark:#4a5561; --wheel:#0a0d10; --cube:#d9a21a; --ctrl:#0b1117; color-scheme:dark}}
+  --tile1:#26313c; --tile2:#212b35; --fieldline:#3a4856; --robot:#7a8693; --robot-dark:#4a5561; --wheel:#0a0d10; --cube:#d9a21a; --claw:#ff6b9a; --ctrl:#0b1117; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f151b; --surface:#17212b; --ink:#e6edf3; --muted:#9aaab9; --line:#2a3744;
   --accent:#ff6257; --true:#3fd3a2; --false:#f2a93b; --bad:#ff7b72; --code-bg:#0b1117; --code-now:#1f2d3b; --code-err:#4a1a1e;
-  --tile1:#26313c; --tile2:#212b35; --fieldline:#3a4856; --robot:#7a8693; --robot-dark:#4a5561; --wheel:#0a0d10; --cube:#d9a21a; --ctrl:#0b1117; color-scheme:dark}
+  --tile1:#26313c; --tile2:#212b35; --fieldline:#3a4856; --robot:#7a8693; --robot-dark:#4a5561; --wheel:#0a0d10; --cube:#d9a21a; --claw:#ff6b9a; --ctrl:#0b1117; color-scheme:dark}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -103,6 +103,10 @@ textarea#src::selection{background:#7fc8ff55}
 .ctrl-foot label{display:flex;gap:6px;align-items:center}
 
 .views{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:12px}
+.views .wide{grid-column:1/-1}
+#claw{aspect-ratio:3/1}
+#clawState{text-transform:none;letter-spacing:0;font:700 12px var(--f-code);color:var(--claw)}
+.box-title .clawword{color:var(--claw)}
 @media (max-width:520px){.views{grid-template-columns:minmax(0,1fr)}}
 canvas{width:100%;display:block;border-radius:10px}
 #field{aspect-ratio:1}
@@ -161,6 +165,102 @@ button.small{font-size:13px;padding:5px 10px}
 .turbo{display:flex;gap:6px 18px;align-items:baseline;flex-wrap:wrap}
 .turbo .big{font-size:40px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
 
+.chal{background:var(--surface);border:2px solid var(--claw);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.chal-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.chal-head select{font-size:15px;font-weight:600}
+.chal-badge{font-size:13px;color:var(--muted)}
+.chal-body{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.chal-body{grid-template-columns:minmax(0,1fr)}}
+.chal-story{display:flex;flex-direction:column;gap:8px;min-width:0}
+.chal-story h3{font-size:22px;font-weight:800}
+.chal-story p{max-width:68ch}
+.chal-goal{font-weight:600;border-left:4px solid var(--claw);padding-left:10px}
+.chal-story code,.chal-hints code,.checks code{background:var(--bg);padding:0 5px;border-radius:4px;font-size:14px}
+.chal-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.checks li{display:grid;grid-template-columns:26px 1fr;gap:4px 8px;align-items:baseline;font-size:15px}
+.checks li .mk{font-weight:800;text-align:center;border-radius:50%;width:22px;height:22px;line-height:22px;font-size:13px;background:var(--bg);color:var(--muted)}
+.checks li.ok .mk{background:var(--true);color:#fff}
+.checks li.bad .mk{background:var(--false);color:#fff}
+.checks li .det{grid-column:2;font-size:13px;color:var(--muted)}
+.chal-msg{border-radius:10px;padding:10px 14px;font-weight:600;background:color-mix(in srgb,var(--true) 14%,var(--surface));border:1.5px solid var(--true)}
+.chal-msg.warn{background:color-mix(in srgb,var(--false) 12%,var(--surface));border-color:var(--false)}
+.chal-msg .big{font-size:20px;font-weight:800;display:block}
+.chal-hints{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.chal-hints:empty{display:none}
+.chal-sol{display:flex;flex-direction:column;gap:8px}
+.chal-sol .preview{max-height:320px;overflow:auto}
+.story-title{font-size:26px;font-weight:800}
+.story-text{font-size:17px;max-width:70ch}
+.sgrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.sgrid{grid-template-columns:minmax(0,1fr)}}
+.scode{background:var(--code-bg);color:var(--code-ink);border-radius:14px;padding:12px 0;font-family:var(--f-code);font-size:14.5px;line-height:28px;overflow:auto;max-height:640px;min-width:0}
+.sl{display:flex;white-space:pre;padding-right:14px}
+.sl .ln{width:40px;flex:none;text-align:right;padding-right:12px;color:var(--code-dim);font-size:12px;user-select:none}
+.sl.dim{opacity:.45}
+.sl.sec{margin-top:6px}
+.blank{display:inline-block;min-width:70px;text-align:center;border-radius:6px;padding:0 6px;line-height:22px;border:2px dashed #ffffff55;color:#ffffff88}
+.blank.cur{border-color:var(--hl);color:var(--hl);background:#ffd84d22;animation:pulse 1.2s ease-in-out infinite}
+.blank.ok{border:2px solid #3fd3a2;color:#3fd3a2;background:#3fd3a222;font-weight:700}
+@keyframes pulse{50%{box-shadow:0 0 0 4px #ffd84d33}}
+.sside{display:flex;flex-direction:column;gap:14px;min-width:0}
+.sq{background:color-mix(in srgb,var(--claw) 7%,var(--surface));border:2px solid var(--claw);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.sq .prog{display:flex;gap:5px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+.sq .dot{width:14px;height:14px;border-radius:50%;background:var(--line)}
+.sq .dot.ok{background:var(--true)}
+.sq .dot.cur{background:var(--claw)}
+.sq .qtext{font-size:19px;font-weight:600;line-height:1.45}
+.sq .qtext code,.sq .fbk code{background:var(--code-bg);color:var(--ss);padding:1px 7px;border-radius:5px;font-size:.9em}
+.sq .qline{font-family:var(--f-code);font-size:14px;background:var(--code-bg);color:var(--code-ink);padding:6px 10px;border-radius:8px;overflow-x:auto;white-space:pre}
+.sq .opts{display:flex;gap:10px;flex-wrap:wrap}
+.sq .opts button{font-family:var(--f-code);font-size:18px;padding:10px 20px;min-width:110px}
+.sq .opts button.right{border-color:var(--true);background:var(--true);color:#fff}
+.sq .opts button.wrong{border-color:var(--false);color:var(--false);text-decoration:line-through}
+.sq .fbk{font-size:16px;font-weight:600}
+.sq .fbk.good{color:var(--true)}
+.sq .fbk.bad{color:var(--false)}
+.sq .big{font-size:24px;font-weight:800;color:var(--true)}
+.cheat{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface)}
+.cheat-t{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.cheat dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:15px}
+.cheat dt{font-family:var(--f-code);font-weight:700}
+.cheat dd{margin:0}
+.cheat code{background:var(--bg);padding:0 5px;border-radius:4px;font-size:14px}
+.mtiles{display:flex;flex-wrap:wrap;gap:8px}
+.mtile{font-size:15px;border-radius:12px;padding:6px 14px 6px 6px;display:flex;gap:8px;align-items:center}
+.mtile .n{width:28px;height:28px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-weight:800;font-size:14px}
+.mtile.cur{border-color:var(--claw);box-shadow:0 0 0 2px var(--claw)}
+.mtile.fin .n{background:var(--true);color:#fff}
+.mbody{display:flex;flex-direction:column;gap:12px}
+.mbody h3{font-size:24px;font-weight:800}
+.mbody > p{font-size:17px;max-width:64ch}
+.msteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.msteps li{display:grid;grid-template-columns:36px 1fr;gap:12px;align-items:start}
+.msteps .mk{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--bg);color:var(--muted)}
+.msteps li.now .mk{background:var(--claw);color:#fff}
+.msteps li.done .mk{background:var(--true);color:#fff}
+.msteps li.later{opacity:.4}
+.msteps li.done .st{color:var(--muted)}
+.msteps li.now{background:color-mix(in srgb,var(--claw) 8%,var(--surface));border-radius:12px;padding:10px 12px;margin:0 -12px}
+.msteps li.now .st > span:first-child{font-size:20px;font-weight:600;line-height:1.45}
+.st{display:flex;flex-direction:column;gap:10px;min-width:0}
+.st code{background:var(--code-bg);color:var(--ss);padding:1px 7px;border-radius:5px;font-size:.92em}
+.msteps kbd{background:var(--bg);border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;padding:0 7px;font-size:.85em}
+.sbtns{display:flex;gap:8px;flex-wrap:wrap}
+.sbtns .primary{font-size:17px;padding:9px 22px}
+.smsg{font-size:16px;color:var(--false);font-weight:600}
+.smsg:empty{display:none}
+.hl-ln.focus{background:#ffd84d33;box-shadow:inset 0 0 0 2px var(--hl)}
+.g.focus{background:#ffd84d40}
+.g.focus .num{color:var(--hl);font-weight:700}
+.mbar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:3px solid var(--claw);box-shadow:0 -6px 20px #0002;
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.mbar-in{max-width:1220px;margin:0 auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.mbar .mk{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--claw);color:#fff;flex:none}
+.mbar .tx{flex:1;min-width:200px;font-size:17px;font-weight:600}
+.mbar .tx code{background:var(--code-bg);color:var(--ss);padding:1px 7px;border-radius:5px}
+.mbar kbd{background:var(--bg);border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;padding:0 7px;font-size:.85em}
+body.has-bar{padding-bottom:120px}
 .missions{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
 .missions ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
 .missions li{max-width:78ch}
@@ -178,6 +278,11 @@ button.small{font-size:13px;padding:5px 10px}
 .quiz{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
 .q{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
 .q .qt{font-weight:600}
+.qgroup{display:flex;flex-direction:column;gap:12px}
+.qgroup h3{font-size:20px}
+.qgroup .lead{font-size:15px}
+.tryit{align-self:flex-start;font-size:13px;padding:5px 12px;border-color:var(--true);color:var(--true)}
+.scen{font-size:14px;color:var(--muted);font-family:var(--f-code)}
 .q .qt code{background:var(--bg);padding:0 6px;border-radius:4px}
 .opt{text-align:left;font-weight:400;padding:8px 12px}
 .opt.right{border-color:var(--true);background:color-mix(in srgb,var(--true) 12%,var(--surface))}
@@ -200,6 +305,27 @@ button.small{font-size:13px;padding:5px 10px}
     <div class="eyebrow">Lab 1 · You are the driver and the programmer</div>
     <h2>Sticks → wheels, buttons → arm and claw</h2>
     <p class="lead">The yellow arrow ▶ shows the line the robot is reading. The code is yours: click inside it and type. With <b>Run as I type</b> on, the robot restarts with your new code. Click a line number to learn what that line means.</p>
+  </div>
+  <div class="chal story" id="story">
+    <div class="eyebrow">Story mission · fill in the code</div>
+    <h3 class="story-title">The tidy-up robot</h3>
+    <p class="story-text">Oh no! The classroom floor is messy. A yellow cube is lying in the middle of the room. Your robot must pick it up and put it in the <b>toy box</b> in the corner, <b>all by itself</b>. Nobody can use the controller. Write the program by choosing the missing word for each blank.</p>
+    <div class="sgrid">
+      <div class="scode" id="sCode" aria-label="The program with blanks"></div>
+      <div class="sside">
+        <div class="sq" id="sQ" aria-live="polite"></div>
+        <div class="cheat">
+          <div class="cheat-t">Cheat sheet</div>
+          <dl>
+            <dt>arm</dt><dd><code>forward</code> = up ↑ · <code>reverse</code> = down ↓</dd>
+            <dt>claw</dt><dd><code>forward</code> = close · <code>reverse</code> = open</dd>
+            <dt>Motor1</dt><dd>the right wheel</dd>
+            <dt>Motor10</dt><dd>the left wheel</dd>
+            <dt>wait</dt><dd><code>seconds</code> or <code>msec</code> (1000 msec = 1 second)</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="lab">
     <div class="codecol">
@@ -274,6 +400,7 @@ button.small{font-size:13px;padding:5px 10px}
       <div class="views">
         <div class="card-box"><div class="box-title"><span>Field (from above)</span></div><canvas id="field" aria-label="Field seen from above, showing the robot and its wheels"></canvas></div>
         <div class="card-box"><div class="box-title"><span>Arm and claw (from the side)</span></div><canvas id="side" aria-label="Side view of the arm and claw with a cube"></canvas></div>
+        <div class="card-box wide"><div class="box-title"><span><span class="clawword">Claw</span> close-up (from above)</span><span id="clawState">claw motor: stopped</span></div><canvas id="claw" aria-label="Close-up of the claw fingers opening and closing"></canvas></div>
       </div>
       <div class="card-box">
         <div class="box-title"><span>Motors</span><span id="roundChip">while loop: round 0</span></div>
@@ -316,11 +443,12 @@ button.small{font-size:13px;padding:5px 10px}
 
 <section>
   <div class="sec-head">
-    <div class="eyebrow">Quiz</div>
-    <h2>Test yourself</h2>
-    <p class="score" id="score"></p>
+    <div class="eyebrow">Practice questions</div>
+    <h2>Read it, predict it, fix it</h2>
+    <p class="lead">These questions are about the class program in Lab 1. Questions with a <b>Try it</b> button set up the controller for you and run the robot at real speed, so you can check your answer with your own eyes.</p>
+    <div class="controls"><p class="score" id="score"></p><button class="small" id="quizReset">Start over</button></div>
   </div>
-  <div class="quiz" id="quiz"></div>
+  <div id="quiz" style="display:flex;flex-direction:column;gap:28px"></div>
 </section>
 </div>
 
@@ -655,8 +783,8 @@ function makeRun(prog,ctx){
   const num=(v,L,what)=>{if(typeof v!=='number'||isNaN(v))throw{line:L,msg:`${what} must be a number.`};return v};
   function ev(e){switch(e.k){
     case 'num':case 'str':case 'bool':return e.v;
-    case 'axis':{const v=ctx.read(()=>Math.round(ctrl.ax[e.a]));ctx.reads.push({k:'axis',a:e.a,v});return v}
-    case 'btn':{const v=ctx.read(()=>!!ctrl.btn[e.b]);ctx.reads.push({k:'btn',b:e.b,v});return v}
+    case 'axis':{const v=ctx.read(()=>Math.round(ctx.ctl.ax[e.a]));ctx.reads.push({k:'axis',a:e.a,v});return v}
+    case 'btn':{const v=ctx.read(()=>!!ctx.ctl.btn[e.b]);ctx.reads.push({k:'btn',b:e.b,v});return v}
     case 'mvel':return ctx.motors.get(e.m).vel;
     case 'var':if(SPECIAL.includes(e.name)||COLORS[e.name]||/^PORT\d+$|^ratio/.test(e.name))throw{line:e.line,msg:`<code>${e.name}</code> can only be used inside a command's ( ), like <code>spin(forward)</code> or <code>wait(10, msec)</code>.`};
       if(!vars.has(e.name)){const close=[...vars.keys()].find(k=>k.toLowerCase()===e.name.toLowerCase());
@@ -801,19 +929,19 @@ for(const k in pads){const P=pads[k];let drag=false;
   const set=ev=>{const r=P.el.getBoundingClientRect();let x=(ev.clientX-r.left)/r.width*2-1,y=-((ev.clientY-r.top)/r.height*2-1);
     const d=Math.hypot(x,y);if(d>1){x/=d;y/=d}x=x*100/0.8;y=y*100/0.8;ctrl.ax[P.x]=Math.round(clamp(x,-100,100));ctrl.ax[P.y]=Math.round(clamp(y,-100,100));
     if(Math.abs(ctrl.ax[P.x])<6)ctrl.ax[P.x]=0;if(Math.abs(ctrl.ax[P.y])<6)ctrl.ax[P.y]=0;showAxes()};
-  P.el.addEventListener('pointerdown',ev=>{drag=true;P.el.setPointerCapture(ev.pointerId);set(ev)});
+  P.el.addEventListener('pointerdown',ev=>{W.touched=true;drag=true;P.el.setPointerCapture(ev.pointerId);set(ev)});
   P.el.addEventListener('pointermove',ev=>{if(drag)set(ev)});
   const up=()=>{if(!drag)return;drag=false;if($('spring').checked){ctrl.ax[P.x]=0;ctrl.ax[P.y]=0;showAxes()}};
   P.el.addEventListener('pointerup',up);P.el.addEventListener('pointercancel',up);
   P.el.addEventListener('dblclick',()=>{ctrl.ax[P.x]=0;ctrl.ax[P.y]=0;showAxes()});
 }
 $('center').onclick=()=>{ctrl.ax=[0,0,0,0,0];showAxes()};
-const btnEls={};document.querySelectorAll('[data-btn]').forEach(b=>{btnEls[b.dataset.btn]=b;b.onclick=()=>setBtn(b.dataset.btn,!ctrl.btn[b.dataset.btn])});
+const btnEls={};document.querySelectorAll('[data-btn]').forEach(b=>{btnEls[b.dataset.btn]=b;b.onclick=()=>{W.touched=true;setBtn(b.dataset.btn,!ctrl.btn[b.dataset.btn])}});
 function setBtn(b,v){ctrl.btn[b]=v;btnEls[b].setAttribute('aria-pressed',v)}
 const KEYAX={KeyW:[3,100],KeyS:[3,-100],KeyD:[4,100],KeyA:[4,-100],ArrowUp:[2,100],ArrowDown:[2,-100],ArrowRight:[1,100],ArrowLeft:[1,-100]};
 const KEYBT={KeyQ:'L1',KeyZ:'L2',KeyE:'R1',KeyC:'R2'};
 const typing=()=>/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
-addEventListener('keydown',e=>{if(typing()||e.repeat)return;
+addEventListener('keydown',e=>{if(typing()||e.repeat)return;if(KEYAX[e.code]||KEYBT[e.code])W.touched=true;
   if(KEYAX[e.code]){e.preventDefault();const [a,v]=KEYAX[e.code];ctrl.ax[a]=v;showAxes()}
   if(KEYBT[e.code]){e.preventDefault();setBtn(KEYBT[e.code],true)}});
 addEventListener('keyup',e=>{if(KEYAX[e.code]){const [a,v]=KEYAX[e.code];if(ctrl.ax[a]===v){ctrl.ax[a]=0;showAxes()}}if(KEYBT[e.code])setBtn(KEYBT[e.code],false)});
@@ -821,7 +949,7 @@ showAxes();
 
 /* ================= Editor ================= */
 const ta=$('src'),layer=$('layer'),gutterIn=$('gutterIn');
-let lineEls=[],gEls=[],lineMap=new Map(),prog=null,errLine=null;
+let lineEls=[],gEls=[],lineMap=new Map(),prog=null,errLine=null,focusLine=null;
 function sync(){layer.style.transform=`translate(${-ta.scrollLeft}px,${-ta.scrollTop}px)`;gutterIn.style.transform=`translateY(${-ta.scrollTop}px)`}
 function paint(){
   const ls=ta.value.split('\n');
@@ -859,7 +987,7 @@ let gen=null,ctx=null,evCount=0,reads=[],replayQ=[],cur=null,visited=new Set(),s
 function start(){
   sim.reset();visited=new Set();skip=new Set();cur=null;finished=false;rounds=0;firstWhile=null;runErr=null;evCount=0;reads=[];
   const motors=new Map();if(prog)for(const [n,d] of prog.devices)if(d.type==='motor')motors.set(n,{name:n,port:d.port,ratio:d.ratio,rev:!!d.rev,vel:50,dir:1,on:false,mode:'brake'});
-  ctx={screen:sim,motors,reads:[],read(fn){const v=replayQ.length?replayQ.shift():fn();reads.push(v);return v}};
+  ctx={screen:sim,motors,reads:[],ctl:ctrl,read(fn){const v=replayQ.length?replayQ.shift():fn();reads.push(v);return v}};
   gen=prog?makeRun(prog,ctx)():null;buildMotorChips();
 }
 function advance(){
@@ -875,8 +1003,8 @@ function advance(){
 function decorate(hot){
   lineEls.forEach((el,i)=>{const l=i+1;
     el.classList.toggle('now',!hot&&!!cur&&cur.line===l);el.classList.toggle('skip',!hot&&skip.has(l));
-    el.classList.toggle('hot',!!hot&&(visited.has(l)||(!!cur&&cur.line===l)));el.classList.toggle('err',errLine===l);el.classList.remove('peek')});
-  gEls.forEach((g,i)=>{const l=i+1;g.classList.toggle('now',!hot&&!!cur&&cur.line===l);g.classList.toggle('err',errLine===l)});
+    el.classList.toggle('hot',!!hot&&(visited.has(l)||(!!cur&&cur.line===l)));el.classList.toggle('err',errLine===l);el.classList.toggle('focus',focusLine===l);el.classList.remove('peek')});
+  gEls.forEach((g,i)=>{const l=i+1;g.classList.toggle('now',!hot&&!!cur&&cur.line===l);g.classList.toggle('err',errLine===l);g.classList.toggle('focus',focusLine===l)});
 }
 function markReading(){
   document.querySelectorAll('.reading').forEach(x=>x.classList.remove('reading'));
@@ -941,10 +1069,11 @@ function startTurbo(fresh){
   setN('Real speed','','Drive it!','No more slow motion. The robot runs the code as fast as a real VEX Brain. Use the sticks and buttons (or the keys) to drive. The green lines show the path the code took in this round.',[],'');
   $('nextBtn').disabled=true;$('backBtn').disabled=true;
   turbo=setInterval(()=>{
-    if(sleep>0){sleep-=20;return}
+    if(sleep>0){sleep-=20;stepWorld(.02);return}
     let budget=0,n=0;
     while(budget<20&&n<4000){const ev=advance();n++;if(!ev)break;if(ev.fn==='wait')budget+=ev.ms}
     if(budget>20)sleep=budget-20;
+    stepWorld(.02);
     decorate(true);$('turboN').textContent=rounds;$('roundChip').textContent=`while loop: round ${rounds}`;
     if(finished||runErr){turboOff();if(finished)render()}
   },20);
@@ -976,25 +1105,31 @@ function updateChips(dt){if(!ctx)return;for(const m of ctx.motors.values()){cons
   gearAng[m.name]+=phys(m)*dt*4;el.querySelector('.gear').setAttribute('transform',`rotate(${gearAng[m.name]})`)}}
 
 /* ================= World simulation ================= */
-const W={x:200,y:300,th:0,arm:-20,claw:.2,trail:[],cube:{held:false,x:232,y:167,vy:0},armStall:false};
-function resetWorld(){Object.assign(W,{x:200,y:300,th:0,arm:-20,claw:.2,trail:[],armStall:false});W.cube={held:false,x:232,y:167,vy:0}}
-$('resetRobot').onclick=resetWorld;
-const SPD=130,TRACK=58;
+const SCENES={free:{robot:[200,330,0],cube:[200,200],zone:null}};
+let scene=SCENES.free;
+const W={};
+function resetWorld(sc){if(sc)scene=sc;const [x,y,th]=scene.robot;
+  Object.assign(W,{x,y,th,arm:-20,claw:.2,prevClaw:.2,trail:[],armStall:false,L:0,R:0,clawP:0,everHeld:false,touched:false});
+  W.cube=scene.cube?{x:scene.cube[0],y:scene.cube[1],held:false}:null}
+resetWorld();
+$('resetRobot').onclick=()=>resetWorld();
+const SPD=130,TRACK=58,REACH=50;
+const clawPt=()=>[W.x+Math.sin(W.th)*REACH,W.y-Math.cos(W.th)*REACH];
 function stepWorld(dt){
   let L=0,R=0,A=0,C=0;
   if(ctx)for(const m of ctx.motors.values()){const r=role(m.port),p=phys(m)/100;if(r.r==='wheel'){if(r.side==='left')L=p;else R=p}else if(r.r==='arm')A=p;else if(r.r==='claw')C=p}
   W.L=L;W.R=R;
   const v=(L+R)/2*SPD;W.th+=(L-R)/TRACK*SPD*dt;
   const nx=W.x+Math.sin(W.th)*v*dt,ny=W.y-Math.cos(W.th)*v*dt;W.x=clamp(nx,34,366);W.y=clamp(ny,34,366);
-  if(v!==0||L!==R){const t=W.trail;const l=t[t.length-1];if(!l||Math.hypot(l[0]-W.x,l[1]-W.y)>4){t.push([W.x,W.y]);if(t.length>400)t.shift()}}
+  if(v!==0||L!==R){const t=W.trail;const l=t[t.length-1];if(!l||Math.hypot(l[0]-W.x,l[1]-W.y)>4){t.push([W.x,W.y]);if(t.length>600)t.shift()}}
   const na=W.arm+(-A)*90*dt;W.armStall=(na>70&&A<0)||(na<-40&&A>0);W.arm=clamp(na,-40,70);
-  W.claw=clamp(W.claw+C*1.6*dt,0,1);
-  const a=W.arm*Math.PI/180,ex=110+130*Math.cos(a),ey=70-130*Math.sin(a);
-  const cb=W.cube;
-  if(!cb.held&&W.claw>.75&&W.arm<=-33&&Math.abs(cb.x-(ex+20))<14&&cb.y>160)cb.held=true;
-  if(cb.held&&W.claw<.5){cb.held=false;cb.vy=0}
-  if(cb.held){cb.x=ex+20*Math.cos(a);cb.y=ey-20*Math.sin(a)+2}
-  else if(cb.y<167){cb.vy+=600*dt;cb.y=Math.min(167,cb.y+cb.vy*dt)}
+  W.prevClaw=W.claw;W.clawP=C;W.claw=clamp(W.claw+C*1.6*dt,0,1);
+  const cb=W.cube;if(!cb)return;
+  const [px,py]=clawPt();
+  if(!cb.held&&W.prevClaw<=.75&&W.claw>.75&&W.arm<=-30&&Math.hypot(cb.x-px,cb.y-py)<22){cb.held=true;W.everHeld=true}
+  if(cb.held&&W.claw<.5)cb.held=false;
+  if(cb.held){cb.x=px;cb.y=py}
+  else{const d=Math.hypot(cb.x-W.x,cb.y-W.y);if(d<40&&d>0){cb.x=W.x+(cb.x-W.x)/d*40;cb.y=W.y+(cb.y-W.y)/d*40}cb.x=clamp(cb.x,14,386);cb.y=clamp(cb.y,14,386)}
 }
 function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
 function fit(cv,w,h){const dpr=window.devicePixelRatio||1,cw=cv.clientWidth;if(!cw)return null;const W2=Math.round(cw*dpr),H2=Math.round(cw*h/w*dpr);
@@ -1002,17 +1137,23 @@ function fit(cv,w,h){const dpr=window.devicePixelRatio||1,cw=cv.clientWidth;if(!
 function drawField(C){const g=fit($('field'),400,400);if(!g)return;
   for(let i=0;i<4;i++)for(let j=0;j<4;j++){g.fillStyle=(i+j)%2?C.t1:C.t2;g.fillRect(i*100,j*100,100,100)}
   g.strokeStyle=C.fl;g.lineWidth=6;g.strokeRect(3,3,394,394);
+  if(scene.zone){const z=scene.zone;g.fillStyle=C.hl;g.globalAlpha=.45;g.fillRect(z[0],z[1],z[2],z[3]);g.globalAlpha=1;
+    g.setLineDash([8,6]);g.strokeStyle=C.fal;g.lineWidth=3;g.strokeRect(z[0],z[1],z[2],z[3]);g.setLineDash([]);
+    g.fillStyle=C.ink;g.font='700 13px Lexend, sans-serif';g.textAlign='center';g.fillText(z[4],z[0]+z[2]/2,z[1]+18)}
+  const cubeDraw=()=>{const cb=W.cube;if(!cb)return;g.fillStyle=C.cube;g.fillRect(cb.x-12,cb.y-12,24,24);g.strokeStyle=C.rd;g.lineWidth=2;g.strokeRect(cb.x-12,cb.y-12,24,24)};
+  if(W.cube&&!W.cube.held)cubeDraw();
   if(W.trail.length>1){g.strokeStyle=C.acc;g.globalAlpha=.35;g.lineWidth=3;g.beginPath();W.trail.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y));g.stroke();g.globalAlpha=1}
   g.save();g.translate(W.x,W.y);g.rotate(W.th);
   g.fillStyle=C.robot;g.fillRect(-26,-30,52,60);
   g.fillStyle=C.rd;g.fillRect(-12,-8,24,18);
-  const op=1-W.claw;g.strokeStyle=C.rd;g.lineWidth=5;g.lineCap='round';
-  g.beginPath();g.moveTo(-6,-30);g.lineTo(-6-op*12,-52);g.moveTo(6,-30);g.lineTo(6+op*12,-52);g.stroke();
+  const op=1-W.claw;g.strokeStyle=C.claw;g.lineWidth=7;g.lineCap='round';
+  g.beginPath();g.moveTo(-8,-30);g.lineTo(-8-op*16,-60);g.moveTo(8,-30);g.lineTo(8+op*16,-60);g.stroke();
   for(const [sx,p] of [[-34,W.L],[34,W.R]]){g.fillStyle=C.wheel;g.fillRect(sx-7,-22,14,44);
     if(p){g.strokeStyle=p>0?C.tru:C.fal;g.fillStyle=g.strokeStyle;g.lineWidth=4;const len=34*Math.abs(p),d=p>0?-1:1;
       g.beginPath();g.moveTo(sx+(sx<0?-16:16),0);g.lineTo(sx+(sx<0?-16:16),d*len);g.stroke();
       g.beginPath();g.moveTo(sx+(sx<0?-16:16),d*(len+8));g.lineTo(sx+(sx<0?-16:16)-6,d*len);g.lineTo(sx+(sx<0?-16:16)+6,d*len);g.fill()}}
   g.restore();
+  if(W.cube&&W.cube.held)cubeDraw();
   g.font='700 15px JetBrains Mono, monospace';g.textAlign='center';g.fillStyle=C.ink;
   if(ctx)for(const m of ctx.motors.values()){const r=role(m.port);if(r.r!=='wheel')continue;const sx=r.side==='left'?-62:62;
     const px=W.x+Math.cos(W.th)*sx,py=W.y+Math.sin(W.th)*sx;g.fillText(m.name,clamp(px,36,364),clamp(py+5,16,392))}
@@ -1026,27 +1167,200 @@ function drawSide(C){const g=fit($('side'),320,200);if(!g)return;
   g.fillStyle='#1d2228';g.fillRect(48,112,46,28);g.fillStyle='#000';g.fillRect(51,115,40,20);
   const a=W.arm*Math.PI/180,ex=110+130*Math.cos(a),ey=70-130*Math.sin(a);
   g.strokeStyle=C.robot;g.lineWidth=10;g.lineCap='round';g.beginPath();g.moveTo(110,70);g.lineTo(ex,ey);g.stroke();
-  const op=(1-W.claw)*0.55;g.strokeStyle=C.rd;g.lineWidth=5;
-  for(const s of [1,-1]){const fa=a+s*op;g.beginPath();g.moveTo(ex,ey);g.lineTo(ex+30*Math.cos(fa),ey-30*Math.sin(fa));g.stroke()}
+  const op=(1-W.claw)*0.6;g.strokeStyle=C.claw;g.lineWidth=7;
+  for(const s of [1,-1]){const fa=a+s*op;g.beginPath();g.moveTo(ex,ey);g.lineTo(ex+32*Math.cos(fa),ey-32*Math.sin(fa));g.stroke()}
+  g.font='700 12px Lexend, sans-serif';g.textAlign='center';g.fillStyle=C.claw;g.fillText('claw',clamp(ex+18,20,300),clamp(ey-22,14,195));
   g.fillStyle=C.wheel;g.beginPath();g.arc(110,70,7,0,7);g.fill();
-  const cb=W.cube;g.fillStyle=C.cube;g.fillRect(cb.x-12,cb.y-12,24,24);
+  const cb=W.cube;
+  if(cb){g.fillStyle=C.cube;
+    if(cb.held)g.fillRect(ex+20*Math.cos(a)-12,ey-20*Math.sin(a)-10,24,24);
+    else{const dx=cb.x-W.x,dy=cb.y-W.y,f=dx*Math.sin(W.th)-dy*Math.cos(W.th),l=dx*Math.cos(W.th)+dy*Math.sin(W.th),sx=110+f*2.44;
+      if(Math.abs(l)<26&&sx>-12&&sx<332)g.fillRect(sx-12,155,24,24)}}
   g.font='600 12px Lexend, sans-serif';g.fillStyle=C.muted;g.textAlign='left';
   g.fillText(W.armStall?'arm: at the end!':`arm ${W.arm>=65?'up':W.arm<=-35?'down':''}`.trim(),8,18);
   g.fillText(`claw ${W.claw>.8?'closed':W.claw<.2?'open':''}`.trim(),8,34);
-  if(cb.held){g.fillStyle=C.tru;g.fillText('holding the cube!',8,50)}
+  if(cb&&cb.held){g.fillStyle=C.tru;g.fillText('holding the cube!',8,50)}
+}
+function drawClaw(C){const g=fit($('claw'),600,200);if(!g)return;
+  g.fillStyle=C.bg;g.fillRect(0,0,600,200);
+  const op=1-W.claw,ang=op*0.26,cb=W.cube||{};
+  g.fillStyle=C.robot;g.fillRect(30,52,90,96);g.fillStyle=C.rd;g.beginPath();g.arc(92,100,20,0,7);g.fill();
+  g.fillStyle=C.bg;g.beginPath();g.arc(92,100,7,0,7);g.fill();
+  g.font='600 13px Lexend, sans-serif';g.fillStyle=C.muted;g.textAlign='center';g.fillText('claw motor',75,172);
+  if(cb.held){g.fillStyle=C.cube;g.fillRect(240,77,46,46);g.fillStyle=C.muted;g.fillText('cube',263,150)}
+  for(const sgn of [-1,1]){const hy=100+sgn*40;
+    g.save();g.translate(130,hy);g.rotate(sgn*ang);
+    g.fillStyle=C.claw;g.beginPath();g.roundRect(0,-9,180,18,9);g.fill();
+    g.fillStyle=C.rd;g.fillRect(110,sgn>0?-17:9,64,8);
+    g.fillStyle=C.wheel;g.beginPath();g.arc(0,0,10,0,7);g.fill();
+    g.restore()}
+  const p=W.clawP||0;
+  if(p){g.strokeStyle=p>0?C.tru:C.fal;g.fillStyle=g.strokeStyle;g.lineWidth=5;
+    for(const sgn of [-1,1]){const tipy=100+sgn*(40+Math.sin(ang)*180),x=340,y0=tipy+sgn*34,y1=tipy+sgn*12,d=p>0?1:-1;
+      const from=d>0?y0:tipy-sgn*40,to=d>0?y1:tipy-sgn*14;g.beginPath();g.moveTo(x,from);g.lineTo(x,to);g.stroke();
+      g.beginPath();g.moveTo(x,to+sgn*(d>0?-8:8));g.lineTo(x-7,to);g.lineTo(x+7,to);g.closePath();g.fill()}}
+  g.textAlign='left';g.font='700 22px Lexend, sans-serif';g.fillStyle=C.claw;
+  const word=W.claw>.97?'CLOSED':W.claw<.03?'OPEN':p>0?'closing…':p<0?'opening…':'holding still';
+  g.fillText(word,445,92);
+  g.font='500 14px JetBrains Mono, monospace';g.fillStyle=C.muted;g.fillText(`${Math.round(W.claw*100)}% closed`,445,116);
+  g.fillStyle=C.line||C.fl;g.fillRect(445,130,130,8);g.fillStyle=C.claw;g.fillRect(445,130,130*W.claw,8);
+  if(p&&(W.claw>=1||W.claw<=0)){g.fillStyle=C.fal;g.font='600 12px Lexend, sans-serif';g.fillText(W.claw>=1?'motor still squeezing!':'motor still pushing open!',445,158)}
+  let m=null;if(ctx)for(const x of ctx.motors.values())if(role(x.port).r==='claw')m=x;
+  const st=$('clawState');const txt=!m?'no claw motor in the code':m.on?`${m.name}: ${out(m)>0?'+':''}${Math.round(out(m))}% → ${phys(m)>0?'closing':phys(m)<0?'opening':'still'}`:`${m.name}: stopped`;
+  if(st.textContent!==txt)st.textContent=txt;
 }
 let last=performance.now(),C=null,cTick=0;
 function frame(now){
   const realDt=Math.min(.05,(now-last)/1000);last=now;
   const dt=realDt*(turbo?1:.35);
   if(!C||now-cTick>1000){cTick=now;C={t1:css('--tile1'),t2:css('--tile2'),fl:css('--fieldline'),robot:css('--robot'),rd:css('--robot-dark'),wheel:css('--wheel'),acc:css('--accent'),
-    tru:css('--true'),fal:css('--false'),ink:css('--ink'),muted:css('--muted'),bg:css('--bg'),cube:css('--cube')}}
-  stepWorld(dt);drawField(C);drawSide(C);updateChips(realDt*(turbo?1:.35));
+    tru:css('--true'),fal:css('--false'),ink:css('--ink'),muted:css('--muted'),bg:css('--bg'),cube:css('--cube'),hl:css('--hl'),claw:css('--claw'),surface:css('--surface')}}
+  if(!turbo)stepWorld(dt);drawField(C);drawSide(C);drawClaw(C);checkStory();updateChips(realDt*(turbo?1:.35));
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
 load('class');
+
+/* ================= Story mission ================= */
+SCENES.tidy={robot:[200,340,0],cube:[200,190],zone:[20,20,110,110,'TOY BOX']};
+const STORY=`#include "vex.h"
+using namespace vex;
+
+vex::brain Brain;
+motor Motor1 = motor(PORT1);
+motor Motor10 = motor(PORT10);
+motor arm(PORT8, ratio18_1, true);
+motor claw(PORT3, ratio18_1, false);
+
+int main(){
+   // 1. Get ready: arm down, claw open
+   arm.spin({0}, 50, percent);
+   claw.spin({1}, 50, percent);
+   wait(1, {2});
+   arm.stop();
+   claw.stop();
+
+   // 2. Drive to the cube
+   Motor1.spin({3}, 50, percent);
+   Motor10.spin(forward, 50, percent);
+   wait({4}, msec);
+   Motor1.stop();
+   Motor10.{5}();
+
+   // 3. Grab the cube and lift it
+   {6}.spin(forward, 50, percent);
+   wait(1, seconds);
+   claw.stop();
+   arm.spin({7}, 50, percent);
+   wait(500, msec);
+   arm.stop();
+
+   // 4. Turn left toward the toy box
+   Motor1.spin(forward, 50, percent);
+   Motor10.spin({8}, 50, percent);
+   wait(300, msec);
+
+   // 5. Drive into the toy box
+   Motor10.spin(forward, 50, percent);
+   wait(2400, msec);
+   Motor1.stop();
+   Motor10.stop();
+
+   // 6. Let go of the cube
+   claw.spin({9}, 50, percent);
+   wait(1, seconds);
+   claw.stop();
+}`.split('\n');
+const BLANKS=[
+ {q:'Step 1. The arm must go <b>down</b>. Look at the cheat sheet.',a:'reverse',opts:{reverse:'',forward:'forward moves the arm <b>up</b>. We need it to go down.',stop:'stop does not move the arm at all.'}},
+ {q:'Now the claw must <b>open</b>, so it can grab the cube later.',a:'reverse',opts:{forward:'forward <b>closes</b> the claw.',percent:'percent is a unit for speed, not a direction.',reverse:''}},
+ {q:'Wait for <b>1 second</b> so the arm and claw have time to move. Which word means seconds?',a:'seconds',opts:{seconds:'',msec:'msec means milliseconds. 1 msec is super short, only 1/1000 of a second!',percent:'percent is for speed, not for time.'}},
+ {q:'Step 2. The right wheel must roll <b>ahead</b> to the cube.',a:'forward',opts:{stop:'stop would not move the wheel.',reverse:'reverse rolls <b>backward</b>, away from the cube.',forward:''}},
+ {q:'How long should the robot drive? The cube is <b>100 units</b> away. At 50% speed, the robot drives about <b>65 units every second</b>.',a:'1500',opts:{'300':'300 msec is too short. The robot would only move about 20 units.','1500':'','6000':'6000 msec is 6 seconds. That is about 390 units. The robot would crash into the wall!'}},
+ {q:'Now <b>stop</b> the left wheel. Which command?',a:'stop',opts:{spin:'spin would keep the wheel turning.',wait:'wait pauses the program, but the wheel keeps turning.',stop:''}},
+ {q:'Step 3. Which motor <b>grabs</b> the cube?',a:'claw',opts:{claw:'',arm:'The arm only moves up and down. It cannot grab.',Motor1:'Motor1 is the right wheel.'}},
+ {q:'Lift the cube a little. The arm must go <b>up</b>.',a:'forward',opts:{reverse:'reverse moves the arm <b>down</b>.',stop:'stop would not lift the cube.',forward:''}},
+ {q:'Step 4. Turn <b>left</b>. The right wheel (Motor1) rolls forward. What should the left wheel (Motor10) do?',a:'reverse',opts:{forward:'If both wheels roll forward, the robot drives straight. It does not turn.',reverse:'',stop:'It would turn, but slowly in a wide circle. Rolling backward makes a quick, tight turn.'}},
+ {q:'Step 6. Let go of the cube in the toy box. The claw must <b>open</b>.',a:'reverse',opts:{stop:'stop keeps the claw closed. The cube would not drop.',reverse:'',forward:'forward <b>closes</b> the claw. The cube would stay stuck!'}},
+];
+const WHY_OK=['The arm goes down.','The claw opens wide.','The robot waits 1 second.','The right wheel rolls ahead.','1.5 seconds × 65 ≈ 100 units. Just right!','Both wheels are stopped now.','The claw closes around the cube.','The arm lifts the cube off the floor.','One wheel forward, one wheel backward: the robot spins left.','The claw opens and the cube drops into the toy box.'];
+let sAns=Array(BLANKS.length).fill(null),sCur=0,sWrong={},sJustOk=false,storyRun=false,storyFull=false,storyMsg='';
+function blankLine(i){return STORY.findIndex(l=>l.includes(`{${i}}`))}
+function sectionStarts(){const r=[];STORY.forEach((l,i)=>{if(/^\s*\/\/ \d\./.test(l))r.push(i)});return r}
+function lastReadyLine(){
+  // include whole sections, in order, while all their blanks are answered
+  const st=sectionStarts();let end=st[0]-1;
+  for(let k=0;k<st.length;k++){const from=st[k],to=(st[k+1]||STORY.length-1)-1;let ok=true;
+    for(let i=from;i<=to;i++){const m=STORY[i].match(/\{(\d+)\}/);if(m&&sAns[+m[1]]==null)ok=false}
+    if(!ok)break;end=to}
+  return end}
+function codeUpTo(end,full){const ls=STORY.slice(0,full?STORY.length:end+1).map(l=>l.replace(/\{(\d+)\}/g,(m,i)=>sAns[+i]));if(!full)ls.push('}');return ls.join('\n')}
+function drawStoryCode(){
+  const end=sAns.every(a=>a!=null)?STORY.length-1:lastReadyLine();
+  const st=sectionStarts();
+  $('sCode').innerHTML=STORY.map((l,i)=>{
+    const parts=l.split(/(\{\d+\})/).map(seg=>{const m=seg.match(/^\{(\d+)\}$/);if(!m)return hl(seg);const b=+m[1];
+      return sAns[b]!=null?`<span class="blank ok">${esc(sAns[b])}</span>`:`<span class="blank${b===sCur?' cur':''}">${b===sCur?'?':'____'}</span>`}).join('');
+    return `<div class="sl${st.includes(i)?' sec':''}${i>end+1&&i<STORY.length-1&&!sAns.every(a=>a!=null)?'':''}"><span class="ln">${i+1}</span><span>${parts||' '}</span></div>`}).join('');
+  const cur=$('sCode').querySelector('.blank.cur');if(cur){const box=$('sCode'),r=cur.getBoundingClientRect(),b=box.getBoundingClientRect();if(r.top<b.top+20||r.bottom>b.bottom-20)box.scrollTop+=r.top-b.top-b.height/2}
+}
+function dots(){return BLANKS.map((_,i)=>`<span class="dot${sAns[i]!=null?' ok':i===sCur?' cur':''}"></span>`).join('')}
+function drawQ(){
+  const q=$('sQ'),all=sAns.every(a=>a!=null);
+  if(all&&!sJustOk){
+    q.innerHTML=`<div class="prog">${dots()} <span>all 10 blanks filled!</span></div>
+      <div class="big">Your program is ready!</div>
+      <div class="qtext">Press the button. The robot runs <b>your</b> program on the field below.</div>
+      <div class="opts"><button class="primary" data-run="full">Run my program ▶</button></div>
+      <div class="fbk ${storyMsg.startsWith('★')?'good':'bad'}" id="sMsg2">${storyMsg}</div>
+      <button class="small" data-reset style="align-self:flex-start">Start over</button>`;return}
+  if(sJustOk){const i=sJustOk-1,line=STORY[blankLine(i)].trim().replace(`{${i}}`,sAns[i]);
+    const secDone=lastReadyLine()>=blankLine(i);
+    q.innerHTML=`<div class="prog">${dots()} <span>blank ${i+1} of ${BLANKS.length}</span></div>
+      <div class="big">✓ Correct!</div>
+      <div class="qline">${hl(line)}</div>
+      <div class="fbk good">${WHY_OK[i]}</div>
+      <div class="opts">${i<BLANKS.length-1?'<button class="primary" data-next>Next blank ▶</button>':'<button class="primary" data-next>Finish ▶</button>'}
+      ${secDone&&i<BLANKS.length-1?'<button data-run="part">Watch the robot so far</button>':''}</div>`;return}
+  const B=BLANKS[sCur],line=STORY[blankLine(sCur)].trim();
+  const shown=line.split(/(\{\d+\})/).map(seg=>seg===`{${sCur}}`?'____':hl(seg.replace(/\{(\d+)\}/g,(m,k)=>sAns[+k]??'____'))).join('');
+  q.innerHTML=`<div class="prog">${dots()} <span>blank ${sCur+1} of ${BLANKS.length}</span></div>
+    <div class="qtext">${B.q}</div>
+    <div class="qline">${shown}</div>
+    <div class="opts">${Object.keys(B.opts).map(o=>`<button data-opt="${esc(o)}" class="${sWrong[sCur]&&sWrong[sCur].includes(o)?'wrong':''}">${esc(o)}</button>`).join('')}</div>
+    <div class="fbk bad" id="sFb">${sWrong[sCur]&&sWrong[sCur].length?'Not quite: '+B.opts[sWrong[sCur][sWrong[sCur].length-1]]+' Try another one!':''}</div>`;
+}
+function drawStory(){drawStoryCode();drawQ()}
+$('sQ').addEventListener('click',e=>{
+  const o=e.target.closest('[data-opt]');
+  if(o){const v=o.dataset.opt,B=BLANKS[sCur];
+    if(v===B.a){sAns[sCur]=v;sJustOk=sCur+1}else{(sWrong[sCur]=sWrong[sCur]||[]);if(!sWrong[sCur].includes(v))sWrong[sCur].push(v);else sWrong[sCur].push(v)}
+    drawStory();return}
+  if(e.target.closest('[data-next]')){sJustOk=false;const n=sAns.findIndex(a=>a==null);sCur=n<0?BLANKS.length:n;drawStory();return}
+  const r=e.target.closest('[data-run]');
+  if(r){const full=r.dataset.run==='full';runStory(full);return}
+  if(e.target.closest('[data-reset]')){sAns=Array(BLANKS.length).fill(null);sCur=0;sWrong={};sJustOk=false;storyMsg='';storyRun=false;drawStory()}
+});
+function runStory(full){
+  wiring.port1='right';$('wiring').value='right';
+  const code=full?codeUpTo(0,true):codeUpTo(lastReadyLine(),false);
+  ta.value=code;ta.scrollTop=0;ta.scrollLeft=0;paint();stopAll();
+  if(!compile())return;
+  ctrl.ax=[0,0,0,0,0];showAxes();for(const b of Object.keys(btnEls))setBtn(b,false);
+  resetWorld(SCENES.tidy);start();storyRun=true;storyFull=full;storyMsg='';startTurbo(true);
+  document.querySelector('.views').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function checkStory(){
+  if(!storyRun||!finished)return;storyRun=false;
+  if(!storyFull)return;
+  const c=W.cube,ok=c&&!c.held&&inZone(c.x,c.y);
+  storyMsg=ok?'★ The room is clean! You wrote a whole robot program by yourself.':'Hmm, the cube is not in the toy box. Press Run again to watch closely.';
+  if(sAns.every(a=>a!=null)&&!sJustOk)drawQ();
+  setN('Story mission','',ok?'★ The room is clean!':'Not in the toy box yet',ok?'You wrote a whole robot program by yourself. The robot did every step on its own: arm down, claw open, drive, grab, lift, turn, drive, drop.':'Press Run my program again and watch closely.',[],'');
+}
+const inZone=(x,y)=>{const z=scene.zone;return z&&x>z[0]&&x<z[0]+z[2]&&y>z[1]&&y<z[1]+z[3]};
+drawStory();
 
 /* ================= Word cards ================= */
 const WORDS=[
@@ -1073,23 +1387,59 @@ $('cards').innerHTML=WORDS.map(([w,m,eg,say])=>`<div class="card"><div class="w"
 $('cards').addEventListener('click',e=>{const b=e.target.closest('[data-say]');if(!b)return;
   try{const u=new SpeechSynthesisUtterance(b.dataset.say);u.lang='en-US';u.rate=.8;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(_){}});
 
-/* ================= Quiz ================= */
-const Q=[
- ['Which part of the controller is <code>Axis3</code>?',['The right stick, up-down','The left stick, up-down','The left stick, left-right'],1,'Yes! Axis3 is the left stick going up and down.'],
- ['You push the right stick all the way down. What does <code>Controller1.Axis2.position()</code> give?',['0','100','-100'],2,'Yes! All the way down is -100. The middle is 0.'],
- ['After <code>Motor1.setVelocity(50, percent);</code> does the motor start moving?',['Yes, at 50%','No, it only sets the speed. spin starts it.','Yes, at full speed'],1,'Yes! setVelocity only sets the speed. spin makes it turn.'],
- ['In <code>motor arm(PORT8, ratio18_1, true);</code> what does <code>true</code> mean?',['The motor is turned on','The motor spins the other way (reversed)','The motor is fast'],1,'Yes! true means reversed: forward and reverse are swapped.'],
- ['In the class program, what happens when you press R1?',['Only the arm moves','The arm and the claw both move','Nothing moves'],1,'Yes! Both if parts ask about ButtonR1, so one button moves two motors.'],
- ['Why does the code have <code>arm.stop();</code> in the else part?',['To stop the arm when no button is pressed','To make the arm faster','To turn off the robot'],0,'Yes! A motor keeps spinning until the code stops it.'],
+/* ================= Practice ================= */
+const S=(ax,btn)=>({ax:Object.assign({1:0,2:0,3:0,4:0},ax||{}),btn:btn||{}});
+const GROUPS=[
+ {title:'1. Read the code',lead:'Find the answer by reading the program. Line numbers are on the left of the code.',qs:[
+  ['Which port is the <code>claw</code> motor plugged into?',['Port 8','Port 3','Port 10'],1,'Yes! Line 10: <code>motor claw(PORT3, ratio18_1, false);</code>'],
+  ['How many motors does this program make?',['2','4','5'],1,'Yes! Motor1, Motor10, arm and claw: lines 7 to 10.'],
+  ['Which line reads the <b>left</b> stick?',['Line 16','Line 20','Line 24'],1,'Yes! Line 20 reads Axis3, the left stick up-down.'],
+  ['What is <code>controller1</code> on line 16?',['The controller you hold','A number box that holds the right stick’s number','A motor'],1,'Yes! It is an int box. The controller is Controller1 with a big C.'],
+  ['Line 11 is just <code>;</code>. What does it do?',['Nothing at all','It stops the program','It stops all motors'],0,'Yes! An empty command does nothing. You could delete it.'],
+  ['What does <code>ratio18_1</code> tell us about the arm motor?',['It is plugged into port 18','It has the green 18:1 gears inside','It spins 18 times'],1,'Yes! ratio18_1 is the green gear cartridge, 200 rpm.'],
+ ]},
+ {title:'2. Predict what happens',lead:'Think first, choose your answer, then press Try it to see the robot do it.',qs:[
+  ['The right stick is all the way up. The left stick is in the middle. No buttons. Which motor spins?',['Only Motor1, at 100%','Only Motor10','Both wheels'],0,'Yes! Axis2 (right stick) goes into controller1, and that sets Motor1’s speed.',S({2:100})],
+  ['Both sticks are all the way up. What does the robot do?',['Spins in place','Drives straight forward','Stays still'],1,'Yes! Both wheels roll forward at 100%, so it drives straight.',S({2:100,3:100})],
+  ['The left stick is all the way down and the right stick is all the way up. What happens?',['It drives forward','It spins in place','It stops'],1,'Yes! One wheel goes forward and one goes backward, so the robot turns on the spot.',S({2:100,3:-100})],
+  ['You hold <b>R2</b>. What do the arm and the claw do?',['Only the arm goes down','The arm goes down and the claw opens','Nothing moves'],1,'Yes! Both if parts check ButtonR2, so both motors spin in reverse.',S({},{R2:true})],
+  ['No buttons are pressed. Which lines run for the arm and the claw?',['Lines 26 and 35','Lines 32 and 41','No lines run'],1,'Yes! Both questions are false, so the else parts run: arm.stop() and claw.stop().',S({})],
+  ['During <code>wait(10,msec);</code> on line 19, is Motor1 still spinning?',['Yes, motors keep spinning while the robot waits','No, wait stops all motors'],0,'Yes! wait only pauses the code. The motors keep going.',S({2:60})],
+  ['You press <b>R1</b> and <b>R2</b> at the same time. What does the arm do?',['It goes up, like R1','It goes down, like R2','It stops'],0,'Yes! The R1 question comes first. Its answer is true, so the else if part is skipped.',S({},{R1:true,R2:true})],
+  ['The left stick is pushed halfway down: Axis3 = -50. What is Motor10’s speed?',['50%','-50%, so it rolls backward','0%'],1,'Yes! controller2 = -50, and a minus speed means backward.',S({3:-50})],
+ ]},
+ {title:'3. Change it and fix it',lead:'Programmers change code all the time. Pick the change that does the job.',qs:[
+  ['The driver wants <b>L1</b> and <b>L2</b> to move the claw. Which lines should change?',['Lines 25 and 28','Lines 34 and 37','Lines 35 and 38'],1,'Yes! Lines 34 and 37 are the two claw questions. Change ButtonR1 to ButtonL1 and ButtonR2 to ButtonL2.'],
+  ['Fill in the blank to make the claw use L1:<br><code>if (Controller1.______.pressing())</code>',['ButtonL1','L1Button','buttonL1'],0,'Yes! ButtonL1, with a big B and a big L.'],
+  ['Someone deletes line 32, <code>arm.stop();</code>. You press R1 and then let go. What happens?',['The arm stops','The arm keeps moving','The program crashes'],1,'Yes! Nothing tells the arm to stop, so it keeps going until it hits the end.'],
+  ['Which number on line 26 makes the arm <b>slower</b>?',['100','80','30'],2,'Yes! 30 percent is slower than 80 percent.'],
+  ['On line 9, <code>true</code> is changed to <code>false</code>. What happens when you press R1 now?',['The arm moves the other way','The arm moves faster','Nothing changes'],0,'Yes! true means reversed. Without it, forward turns the other way.'],
+  ['Line 18 is changed to <code>Motor1.spin(forward)</code> with no <code>;</code>. What will happen?',['The robot drives faster','The program has a problem: the line needs a ;','Nothing, it still works'],1,'Yes! Every command ends with a semicolon. Try it in Lab 1 and read the message.'],
+  ['Line 17 says <code>Controller1</code> instead of <code>controller1</code>. Is that OK?',['Yes, big and small letters are the same','No, Controller1 is the controller, not the number box'],1,'Yes! In C++, big and small letters make different names.'],
+ ]},
 ];
-const right=new Set();
-$('score').textContent=`0 of ${Q.length} correct`;
-$('quiz').innerHTML=Q.map(([q,opts],qi)=>`<div class="q" data-q="${qi}"><div class="qt">${qi+1}. ${q}</div>${opts.map((o,oi)=>`<button class="opt" data-o="${oi}">${o}</button>`).join('')}<div class="fb" aria-live="polite"></div></div>`).join('');
-$('quiz').addEventListener('click',e=>{const b=e.target.closest('.opt');if(!b)return;const box=b.closest('.q'),qi=+box.dataset.q,oi=+b.dataset.o;
+const ALL=GROUPS.flatMap(g=>g.qs);let qn=0;const right=new Set();
+$('quiz').innerHTML=GROUPS.map(g=>`<div class="qgroup"><h3>${g.title}</h3><p class="lead">${g.lead}</p><div class="quiz">${g.qs.map(([q,opts,ans,fb,sc])=>{const qi=qn++;
+  return `<div class="q" data-q="${qi}"><div class="qt">${qi+1}. ${q}</div>${sc?`<div class="scen">${scenTxt(sc)}</div>`:''}${opts.map((o,oi)=>`<button class="opt" data-o="${oi}">${o}</button>`).join('')}${sc?`<button class="tryit" data-try="${qi}">▶ Try it</button>`:''}<div class="fb" aria-live="polite"></div></div>`}).join('')}</div></div>`).join('');
+function scenTxt(sc){const a=[];if(sc.ax[2])a.push(`Axis2 = ${sc.ax[2]}`);if(sc.ax[3])a.push(`Axis3 = ${sc.ax[3]}`);const b=Object.keys(sc.btn).filter(k=>sc.btn[k]);
+  if(b.length)a.push(b.join(' + ')+' pressed');return a.length?a.join(' · '):'sticks centered · no buttons'}
+const score=()=>{$('score').textContent=`${right.size} of ${ALL.length} correct`+(right.size===ALL.length?'. All correct. Great driving and great reading!':'')};score();
+function tryIt(sc){
+  storyRun=false;
+  if(ta.value!==EX.class){$('examples').value='class';load('class')}
+  ctrl.ax=[0,0,0,0,0];for(const k in sc.ax)ctrl.ax[k]=sc.ax[k];showAxes();
+  for(const b of Object.keys(btnEls))setBtn(b,!!sc.btn[b]);
+  resetWorld(SCENES.free);startTurbo(true);
+  document.querySelector('.stage').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('quiz').addEventListener('click',e=>{
+  const t=e.target.closest('[data-try]');if(t){tryIt(ALL[+t.dataset.try][4]);return}
+  const b=e.target.closest('.opt');if(!b)return;const box=b.closest('.q'),qi=+box.dataset.q,oi=+b.dataset.o,Q=ALL[qi];
   box.querySelectorAll('.opt').forEach(o=>o.classList.remove('right','wrong'));
-  if(oi===Q[qi][2]){b.classList.add('right');box.querySelector('.fb').textContent=Q[qi][3];right.add(qi)}
-  else{b.classList.add('wrong');box.querySelector('.fb').textContent='Almost! Try the robot in Lab 1, then try once more.'}
-  $('score').textContent=`${right.size} of ${Q.length} correct`+(right.size===Q.length?'. All correct. Great driving and great reading!':'');});
+  if(oi===Q[2]){b.classList.add('right');box.querySelector('.fb').innerHTML=Q[3];right.add(qi)}
+  else{b.classList.add('wrong');box.querySelector('.fb').textContent=Q[4]?'Not quite. Press Try it and watch the robot, then choose again.':'Not quite. Look at the code in Lab 1 again, then choose again.'}
+  score()});
+$('quizReset').onclick=()=>{right.clear();document.querySelectorAll('#quiz .opt').forEach(o=>o.classList.remove('right','wrong'));document.querySelectorAll('#quiz .fb').forEach(f=>f.textContent='');score()};
 })();
 </script>
 
